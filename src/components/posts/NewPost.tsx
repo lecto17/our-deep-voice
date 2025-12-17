@@ -20,19 +20,18 @@ const NewPost = ({ channelId }: { channelId: string }) => {
   const [placeholder, setPlaceholder] = useState('오늘의 일기를 적어보세요 ✍️');
   const [today, setToday] = useState<string>('');
 
-  const { addPost } = usePosts(channelId);
+  const { addPost, isAddingPost } = usePosts(channelId);
   const { user: userProfile } = useUser(channelId);
   const prefixUrl = `/channels/${channelId}`;
 
   const handleClickPublish = async () => {
-    setLoading(true);
     try {
       await addPost(textAreaRef.current?.value || '', file || undefined);
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.toString());
-    } finally {
       router.push(`${prefixUrl}`);
-      setLoading(false);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.toString());
+      }
     }
   };
 
@@ -60,7 +59,7 @@ const NewPost = ({ channelId }: { channelId: string }) => {
 
   return (
     <div className="relative w-full h-full min-h-[60vh] p-4 sm:p-6 flex items-start justify-center bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      {loading && (
+      {isAddingPost && (
         <div className="absolute z-20 inset-0 w-full h-full backdrop-blur-[2px] bg-sky-400/10">
           <Loading />
         </div>

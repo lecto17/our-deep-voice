@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import useUser from '@/hooks/useUser';
+import { toast } from 'sonner';
+import { TOAST_MESSAGES } from '@/config/toastMessages';
 
 type UserProfileProps = {
   channelId: string;
@@ -14,10 +16,9 @@ const UserProfile = ({ channelId }: UserProfileProps) => {
   const [nickname, setNickname] = useState('');
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { user, updateUserProfile } = useUser(channelId);
+  const { user, updateUserProfile, isUpdatingProfile } = useUser(channelId);
 
   useEffect(() => {
     if (user != null) {
@@ -35,6 +36,10 @@ const UserProfile = ({ channelId }: UserProfileProps) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreviewUrl(e.target?.result as string);
+        toast.success(TOAST_MESSAGES.PROFILE_IMAGE_SELECT_SUCCESS);
+      };
+      reader.onerror = () => {
+        toast.error(TOAST_MESSAGES.IMAGE_LOAD_ERROR);
       };
       reader.readAsDataURL(file);
     }
@@ -42,9 +47,11 @@ const UserProfile = ({ channelId }: UserProfileProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nickname.trim()) return;
+    if (!nickname.trim()) {
+      toast.error(TOAST_MESSAGES.PROFILE_NICKNAME_EMPTY_ERROR);
+      return;
+    }
 
-    setIsLoading(true);
     try {
       await updateUserProfile({
         userName: nickname.trim(),
@@ -53,8 +60,6 @@ const UserProfile = ({ channelId }: UserProfileProps) => {
       router.push(`/channels/${channelId}/onboarding/complete`);
     } catch (error) {
       console.error('Onboarding failed:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -161,10 +166,10 @@ const UserProfile = ({ channelId }: UserProfileProps) => {
           <div className="flex">
             <button
               type="submit"
-              disabled={!nickname.trim() || isLoading}
+              disabled={!nickname.trim() || isUpdatingProfile}
               className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? '처리 중...' : '완료'}
+              {isUpdatingProfile ? '처리 중...' : '완료'}
             </button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 type Props = {
   setModalOpen?: (isOpen: boolean) => void;
@@ -27,19 +28,19 @@ export const useChannelHomeManageAction = ({ setModalOpen }: Props) => {
       );
 
       if (response.status === 401) {
-        alert('비밀번호가 일치하지 않습니다.');
+        toast.error('비밀번호가 일치하지 않습니다.');
         return false;
       }
 
       if (!response.ok) {
-        alert('비밀번호 확인에 실패하였습니다.');
+        toast.error('비밀번호 확인에 실패하였습니다.');
         return false;
       }
 
       return true;
     } catch (error) {
       console.error('Error checking password:', error);
-      alert('비밀번호 확인 중 오류가 발생했습니다.');
+      toast.error('비밀번호 확인 중 오류가 발생했습니다.');
       return false;
     }
   };
@@ -58,7 +59,7 @@ export const useChannelHomeManageAction = ({ setModalOpen }: Props) => {
       }
     } catch (error) {
       console.error('Error participating channel:', error);
-      alert('채널 참여에 실패했습니다.');
+      toast.error('채널 참여에 실패했습니다.');
     }
   };
 
@@ -95,7 +96,7 @@ export const useChannelHomeManageAction = ({ setModalOpen }: Props) => {
         // 채널 탈퇴 시 채널 목록 새로고침
         window.location.reload();
       } else {
-        alert(
+        toast.error(
           action === 'LEAVE'
             ? '채널 탈퇴에 실패했습니다.'
             : '채널 참여에 실패했습니다.',
@@ -103,7 +104,7 @@ export const useChannelHomeManageAction = ({ setModalOpen }: Props) => {
       }
     } catch (error) {
       console.error('Error handling channel action:', error);
-      alert('오류가 발생했습니다.');
+      toast.error('오류가 발생했습니다.');
     }
   };
 

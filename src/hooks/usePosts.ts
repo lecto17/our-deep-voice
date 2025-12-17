@@ -4,6 +4,8 @@ import { getDateYYYYMMDDWithDash } from '@/utils/utils';
 import { useCallback } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import useSWRInfinite from 'swr/infinite';
+import { useToastMutation } from './useToastMutation';
+import { TOAST_MESSAGES } from '@/config/toastMessages';
 
 export default function usePosts(channelId: string, date?: string) {
   const { postsKey } = useCacheKeyContext();
@@ -35,23 +37,39 @@ export default function usePosts(channelId: string, date?: string) {
 
   const { mutate: globalMutate } = useSWRConfig();
 
-  const addPost = async (text: string, file?: File) => {
-    const formData = new FormData();
+  const {
+    mutate: addPostMutation,
+    isLoading: isAddingPost,
+  } = useToastMutation(
+    async ({ text, file }: { text: string; file?: File }) => {
+      const formData = new FormData();
+      formData.append('text', text);
+      formData.append('channelId', channelId);
 
-    formData.append('text', text);
-    formData.append('channelId', channelId);
+      if (file) {
+        formData.append('file', file);
+        formData.append('fileName', file.name);
+      }
 
-    if (file) {
-      formData.append('file', file);
-      formData.append('fileName', file.name);
+      return fetch('/api/post', {
+        method: 'POST',
+        body: formData,
+      }).then((res) => {
+        if (!res.ok) throw new Error('Failed to create post');
+        return res.json();
+      });
+    },
+    {
+      successMessage: TOAST_MESSAGES.POST_CREATE_SUCCESS,
+      errorMessage: TOAST_MESSAGES.POST_CREATE_ERROR,
+      onSuccess: () => {
+        mutate(undefined, { revalidate: true });
+      },
     }
+  );
 
-    await fetch('/api/post', {
-      method: 'POST',
-      body: formData,
-    })
-      .then(() => mutate(undefined, { revalidate: true }))
-      .catch((err) => new Error(err));
+  const addPost = (text: string, file?: File) => {
+    return addPostMutation({ text, file });
   };
 
   const upsertCommentOnPost = useCallback(
@@ -199,7 +217,7 @@ export default function usePosts(channelId: string, date?: string) {
         console.error('Failed to toggle reaction:', error);
         // 에러 발생 시 원래 상태로 롤백
         mutate(postPages, { revalidate: true });
-        throw error;
+        // 에러는 컴포넌트로 전파하지 않음 (조용히 실패)
       }
     },
     [postPages, mutate, key],
@@ -211,6 +229,7 @@ export default function usePosts(channelId: string, date?: string) {
     isLoadingMore,
     error,
     addPost,
+    isAddingPost,
     addCommentOnPost,
     toggleReactionOnPost,
     setSize,

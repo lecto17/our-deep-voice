@@ -4,6 +4,8 @@ import { SupaComment } from '@/types/post';
 // import { useSession } from "next-auth/react";
 import { useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { TOAST_MESSAGES } from '@/config/toastMessages';
 
 type CommentFormProps = {
   postId: string;
@@ -26,7 +28,10 @@ const CommentForm = ({ postId, formStyle, onSubmit }: CommentFormProps) => {
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     // 공백의 경우 early return 하여 UX 개선
-    if (value.trim() === '') return;
+    if (value.trim() === '') {
+      toast.error(TOAST_MESSAGES.COMMENT_EMPTY_ERROR);
+      return;
+    }
 
     onSubmit(
       {

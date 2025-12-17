@@ -5,23 +5,45 @@ import {
   SupaUserProfile,
   UserProfile,
 } from '@/types/user';
+import { useToastMutation } from './useToastMutation';
+import { TOAST_MESSAGES } from '@/config/toastMessages';
 
 export default function useUser(channelId: string) {
   const key = channelId ? `/api/me?channelId=${channelId}` : null;
-  const { data: user, isLoading } = useSWR<SupaUserProfile>(key);
+  const { data: user, isLoading, mutate } = useSWR<SupaUserProfile>(key);
 
-  const updateUserProfile = async (data: Omit<OnboardingUserProfile, 'id'>) => {
-    const formData = new FormData();
-    formData.append('userName', data.userName);
-    if (data.avatarFile) {
-      formData.append('avatarFile', data.avatarFile as File);
+  const {
+    mutate: updateProfileMutation,
+    isLoading: isUpdatingProfile,
+  } = useToastMutation(
+    async (data: Omit<OnboardingUserProfile, 'id'>) => {
+      const formData = new FormData();
+      formData.append('userName', data.userName);
+      if (data.avatarFile) {
+        formData.append('avatarFile', data.avatarFile as File);
+      }
+
+      return fetch(`/api/me?channelId=${channelId}`, {
+        method: 'PUT',
+        body: formData,
+      }).then((res) => {
+        if (!res.ok) throw new Error('Failed to update profile');
+        return res.json();
+      });
+    },
+    {
+      successMessage: TOAST_MESSAGES.PROFILE_UPDATE_SUCCESS,
+      errorMessage: TOAST_MESSAGES.PROFILE_UPDATE_ERROR,
+      onSuccess: () => {
+        mutate();
+      },
     }
+  );
 
-    return await fetch(`/api/me?channelId=${channelId}`, {
-      method: 'PUT',
-      body: formData,
-    }).then((res) => res.json());
+  return {
+    user,
+    isLoading,
+    updateUserProfile: updateProfileMutation,
+    isUpdatingProfile,
   };
-
-  return { user, isLoading, updateUserProfile };
 }

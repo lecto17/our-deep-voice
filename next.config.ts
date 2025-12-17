@@ -33,6 +33,8 @@ const nextConfig = {
           'https://your-production-domain.com'
         : process.env.NEXT_PUBLIC_APP_URL_DEV || 'http://localhost:3000',
   },
+  // sharp를 서버 번들에서만 사용하도록 설정
+  serverExternalPackages: ['sharp'],
 };
 
 export default nextConfig;

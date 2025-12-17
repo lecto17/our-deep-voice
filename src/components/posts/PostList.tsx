@@ -5,42 +5,67 @@ import GridSpinner from '@/components/spinner/GridSpinner';
 import usePosts from '@/hooks/usePosts';
 import { useSearchParams } from 'next/navigation';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
-// import RecommendUsers from "@/components/user/RecommendUsers";
+import { useCallback } from 'react';
+import useInfiniteScroll from '@/hooks/useInfiniteScroll';
+
+interface IntersectAreaProps {
+  onIntersect: () => void;
+  isLoading?: boolean;
+}
+
+const IntersectArea = ({
+  onIntersect,
+  isLoading = false,
+}: IntersectAreaProps) => {
+  const ref = useInfiniteScroll(onIntersect);
+
+  return (
+    <div
+      ref={ref}
+      className="h-10 w-full flex justify-center items-center"
+    >
+      {isLoading && <GridSpinner color={LOADING_BAR_COLOR} />}
+    </div>
+  );
+};
 
 const PostList = ({ channelId }: { channelId: string }) => {
   const date =
     useSearchParams().get('date') ||
     getDateYYYYMMDDWithDash().replaceAll('-', '');
-  const { posts, isLoading, addCommentOnPost } = usePosts(channelId, date);
+  const { posts, isLoading, addCommentOnPost, setSize, isLoadingMore } =
+    usePosts(channelId, date);
 
-  if (isLoading) {
-    return (
-      <div className="w-full flex justify-center mt-32">
-        <GridSpinner color={LOADING_BAR_COLOR} />
-      </div>
-    );
-  }
-
-  // if (!posts?.length) {
-  //   return <RecommendUsers />;
-  // }
+  const handleIntersect = useCallback(() => {
+    setSize((prev) => prev + 1);
+  }, [setSize]);
 
   return (
     <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-10 pb-32">
-      {posts != null && posts.length > 0 ? (
-        posts.map((post, idx) => (
-          <li
-            key={post.id}
-            className="w-full flex justify-center"
-          >
-            <PostCard
+      {isLoading ? (
+        <div className="w-full flex justify-center mt-32">
+          <GridSpinner color={LOADING_BAR_COLOR} />
+        </div>
+      ) : posts != null && posts.length > 0 ? (
+        <>
+          {posts.map((post, idx) => (
+            <li
               key={post.id}
-              post={post}
-              priority={idx < 2}
-              addCommentOnPost={addCommentOnPost}
-            />
-          </li>
-        ))
+              className="w-full flex justify-center"
+            >
+              <PostCard
+                key={post.id}
+                post={post}
+                priority={idx < 2}
+                addCommentOnPost={addCommentOnPost}
+              />
+            </li>
+          ))}
+          <IntersectArea
+            onIntersect={handleIntersect}
+            isLoading={isLoadingMore}
+          />
+        </>
       ) : (
         <div className="w-full flex justify-center mt-32">
           <p className="text-gray-500 whitespace-pre-line">

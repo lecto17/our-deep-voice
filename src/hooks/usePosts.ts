@@ -3,13 +3,36 @@ import { SupaComment, SupaPost } from '@/types/post';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
 import { useCallback } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
+import useSWRInfinite from 'swr/infinite';
 
 export default function usePosts(channelId: string, date?: string) {
   const { postsKey } = useCacheKeyContext();
   const today = getDateYYYYMMDDWithDash().replaceAll('-', '');
   const key = `${postsKey}?channelId=${channelId}&date=${date || today}`;
 
-  const { data: posts, isLoading, error, mutate } = useSWR<SupaPost[]>(key);
+  const getKey = (pageIndex: number, previousPageData: SupaPost[]) => {
+    if (previousPageData && !previousPageData.length) return null; // reached the end
+    return `${key}&page=${pageIndex}&limit=10`; // SWR key
+  };
+
+  const {
+    data: postPages,
+    isLoading,
+    isValidating: isLoadingMore,
+    error,
+    mutate,
+    setSize,
+    size,
+  } = useSWRInfinite<SupaPost[]>(
+    getKey,
+    (url) => fetch(url).then((res) => res.json()),
+    {
+      revalidateFirstPage: false,
+    },
+  );
+
+  const posts = postPages ? postPages.flat() : [];
+
   const { mutate: globalMutate } = useSWRConfig();
 
   const addPost = async (text: string, file?: File) => {
@@ -43,7 +66,7 @@ export default function usePosts(channelId: string, date?: string) {
 
   const addCommentOnPost = useCallback(
     async (comment: SupaComment, postId: string) => {
-      let newPosts;
+      let newPostPages;
       if (comment?.id) {
         // newPosts = comments?.map(({ id, ...rest }) =>
         //   id === comment.id
@@ -51,18 +74,20 @@ export default function usePosts(channelId: string, date?: string) {
         //     : { id, ...rest }
         // );
       } else {
-        newPosts = posts?.map((el) => {
-          if (postId === el.id) {
-            return {
-              ...el,
-              commentCount: el.commentCount + 1,
-            };
-          } else return el;
-        });
+        newPostPages = postPages?.map((page) =>
+          page.map((el) => {
+            if (postId === el.id) {
+              return {
+                ...el,
+                commentCount: el.commentCount + 1,
+              };
+            } else return el;
+          }),
+        );
       }
 
       mutate(upsertCommentOnPost(postId, comment), {
-        optimisticData: newPosts,
+        optimisticData: newPostPages,
         populateCache: false,
         revalidate: false,
         rollbackOnError: true,
@@ -70,7 +95,7 @@ export default function usePosts(channelId: string, date?: string) {
 
       globalMutate(`/api/posts/${postId}`);
     },
-    [posts, mutate, upsertCommentOnPost, globalMutate],
+    [postPages, mutate, upsertCommentOnPost, globalMutate],
   );
 
   const toggleReactionOnPost = useCallback(
@@ -79,76 +104,78 @@ export default function usePosts(channelId: string, date?: string) {
         addFlag = false;
 
       // Optimistic update: UI를 먼저 업데이트
-      const optimisticPosts = posts?.map((post) => {
-        if (post.id === postId) {
-          const existingReaction = post.reactions.find(
-            (r: { emoji: string }) => r.emoji === emoji,
-          );
+      const optimisticPostPages = postPages?.map((page) =>
+        page.map((post) => {
+          if (post.id === postId) {
+            const existingReaction = post.reactions.find(
+              (r: { emoji: string }) => r.emoji === emoji,
+            );
 
-          if (
-            existingReaction?.reactedByMe &&
-            existingReaction.emoji === emoji
-          ) {
-            // 이미 있으면 제거
-            newReactions = post.reactions.map((reaction) => {
-              if (reaction.emoji === emoji) {
-                return {
-                  ...reaction,
-                  count: reaction.count - 1 === 0 ? 0 : reaction.count - 1,
-                  reactedByMe: false,
-                };
-              }
-              return reaction;
-            });
-          } else {
-            // 없으면 추가
-            addFlag = true;
-
-            if (post.reactions.length === 0) {
-              newReactions = [
-                {
-                  emoji,
-                  count: 1,
-                  reactedByMe: true,
-                },
-              ];
-            } else {
-              let added = false;
-              newReactions = post.reactions.map((_reaction) => {
-                if (_reaction.emoji === emoji) {
-                  added = true;
+            if (
+              existingReaction?.reactedByMe &&
+              existingReaction.emoji === emoji
+            ) {
+              // 이미 있으면 제거
+              newReactions = post.reactions.map((reaction) => {
+                if (reaction.emoji === emoji) {
                   return {
-                    ..._reaction,
-                    count: _reaction.count + 1,
-                    reactedByMe: true,
+                    ...reaction,
+                    count: reaction.count - 1 === 0 ? 0 : reaction.count - 1,
+                    reactedByMe: false,
                   };
                 }
-
-                return _reaction;
+                return reaction;
               });
+            } else {
+              // 없으면 추가
+              addFlag = true;
 
-              if (!added) {
+              if (post.reactions.length === 0) {
                 newReactions = [
-                  ...newReactions,
                   {
                     emoji,
                     count: 1,
                     reactedByMe: true,
                   },
                 ];
+              } else {
+                let added = false;
+                newReactions = post.reactions.map((_reaction) => {
+                  if (_reaction.emoji === emoji) {
+                    added = true;
+                    return {
+                      ..._reaction,
+                      count: _reaction.count + 1,
+                      reactedByMe: true,
+                    };
+                  }
+
+                  return _reaction;
+                });
+
+                if (!added) {
+                  newReactions = [
+                    ...newReactions,
+                    {
+                      emoji,
+                      count: 1,
+                      reactedByMe: true,
+                    },
+                  ];
+                }
               }
             }
+            return {
+              ...post,
+              reactions: newReactions,
+            };
           }
-          return {
-            ...post,
-            reactions: newReactions,
-          };
-        }
-        return post;
-      });
+          return post;
+        }),
+      );
 
       // Optimistic update 적용
-      mutate(optimisticPosts, { revalidate: false });
+      mutate(optimisticPostPages, { revalidate: false });
 
       try {
         let result;
@@ -171,19 +198,22 @@ export default function usePosts(channelId: string, date?: string) {
       } catch (error) {
         console.error('Failed to toggle reaction:', error);
         // 에러 발생 시 원래 상태로 롤백
-        mutate(posts, { revalidate: true });
+        mutate(postPages, { revalidate: true });
         throw error;
       }
     },
-    [posts, mutate, key],
+    [postPages, mutate, key],
   );
 
   return {
     posts,
     isLoading,
+    isLoadingMore,
     error,
     addPost,
     addCommentOnPost,
     toggleReactionOnPost,
+    setSize,
+    size: postPages?.length || 0,
   };
 }

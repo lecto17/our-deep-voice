@@ -1,16 +1,27 @@
 import { useCacheKeyContext } from '@/context/CacheKeyContext';
 import { SupaComment, SupaPost } from '@/types/post';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { useToastMutation } from './useToastMutation';
 import { TOAST_MESSAGES } from '@/config/toastMessages';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
+import useUser from './useUser';
 
 export default function usePosts(channelId: string, date?: string) {
   const { postsKey } = useCacheKeyContext();
   const today = getDateYYYYMMDDWithDash().replaceAll('-', '');
   const key = `${postsKey}?channelId=${channelId}&date=${date || today}`;
+
+  // 현재 사용자 정보
+  const { user } = useUser(channelId);
+
+  // 새 게시글 카운트 상태
+  const [newPostsCount, setNewPostsCount] = useState(0);
+
+  // 오늘 날짜인지 확인 (실시간 구독은 오늘만 활성화)
+  const isToday = !date || date === today;
 
   const getKey = (pageIndex: number, previousPageData: SupaPost[]) => {
     if (previousPageData && !previousPageData.length) return null; // reached the end
@@ -196,9 +207,8 @@ export default function usePosts(channelId: string, date?: string) {
       mutate(optimisticPostPages, { revalidate: false });
 
       try {
-        let result;
         if (addFlag) {
-          result = await fetch(`/api/posts/${postId}/reaction`, {
+          await fetch(`/api/posts/${postId}/reaction`, {
             method: 'POST',
             body: JSON.stringify({
               postId,
@@ -206,7 +216,7 @@ export default function usePosts(channelId: string, date?: string) {
             }),
           }).then((res) => res.json());
         } else {
-          result = await fetch(
+          await fetch(
             `/api/posts/${postId}/reaction/${encodeURIComponent(emoji)}`,
             {
               method: 'DELETE',
@@ -223,6 +233,69 @@ export default function usePosts(channelId: string, date?: string) {
     [postPages, mutate, key],
   );
 
+  // 실시간 이벤트 핸들러
+  const handlePostInsert = useCallback(() => {
+    // 새 게시글이 추가되면 카운트 증가
+    setNewPostsCount((prev) => prev + 1);
+  }, []);
+
+  const handlePostDelete = useCallback(
+    (payload: any) => {
+      // 게시글 삭제 시 목록에서 제거
+      const deletedPostId = payload.old.id;
+      const updatedPages = postPages?.map((page) =>
+        page.filter((post) => post.id !== deletedPostId),
+      );
+      mutate(updatedPages, { revalidate: false });
+    },
+    [postPages, mutate],
+  );
+
+  const handleReactionChange = useCallback(
+    (payload: any) => {
+      // 공감 변경 시 해당 게시글만 revalidate
+      const postId = payload.new?.post_id || payload.old?.post_id;
+      if (postId) {
+        // 전체 페이지를 revalidate하여 최신 데이터 가져오기
+        mutate(undefined, { revalidate: true });
+      }
+    },
+    [mutate],
+  );
+
+  const handleCommentInsert = useCallback(
+    (payload: any) => {
+      // 댓글 추가 시 해당 게시글의 댓글 카운트 증가
+      const postId = payload.new.post_id;
+      const updatedPages = postPages?.map((page) =>
+        page.map((post) =>
+          post.id === postId
+            ? { ...post, commentCount: post.commentCount + 1 }
+            : post,
+        ),
+      );
+      mutate(updatedPages, { revalidate: false });
+    },
+    [postPages, mutate],
+  );
+
+  // 실시간 구독 활성화 (오늘 날짜일 때만)
+  useRealtimeSubscription({
+    channelId,
+    currentUserId: user?.id,
+    enabled: isToday,
+    onPostInsert: handlePostInsert,
+    onPostDelete: handlePostDelete,
+    onReactionChange: handleReactionChange,
+    onCommentInsert: handleCommentInsert,
+  });
+
+  // 새로고침 핸들러 (배너 클릭 시 실행)
+  const handleRefresh = useCallback(() => {
+    setNewPostsCount(0);
+    mutate(undefined, { revalidate: true });
+  }, [mutate]);
+
   return {
     posts,
     isLoading,
@@ -234,5 +307,7 @@ export default function usePosts(channelId: string, date?: string) {
     toggleReactionOnPost,
     setSize,
     size: postPages?.length || 0,
+    newPostsCount,
+    handleRefresh,
   };
 }

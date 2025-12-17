@@ -8,6 +8,11 @@ import { useToastMutation } from './useToastMutation';
 import { TOAST_MESSAGES } from '@/config/toastMessages';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
 import useUser from './useUser';
+import {
+  RealtimePostgresInsertPayload,
+  RealtimePostgresDeletePayload,
+} from '@supabase/supabase-js';
+import { PostRecord, PostReactionRecord, CommentRecord } from '@/types/realtime';
 
 export default function usePosts(channelId: string, date?: string) {
   const { postsKey } = useCacheKeyContext();
@@ -240,7 +245,7 @@ export default function usePosts(channelId: string, date?: string) {
   }, []);
 
   const handlePostDelete = useCallback(
-    (payload: any) => {
+    (payload: RealtimePostgresDeletePayload<PostRecord>) => {
       // 게시글 삭제 시 목록에서 제거
       const deletedPostId = payload.old.id;
       const updatedPages = postPages?.map((page) =>
@@ -252,9 +257,22 @@ export default function usePosts(channelId: string, date?: string) {
   );
 
   const handleReactionChange = useCallback(
-    (payload: any) => {
+    (
+      payload:
+        | RealtimePostgresInsertPayload<PostReactionRecord>
+        | RealtimePostgresDeletePayload<PostReactionRecord>,
+    ) => {
       // 공감 변경 시 해당 게시글만 revalidate
-      const postId = payload.new?.post_id || payload.old?.post_id;
+      let postId: string | null = null;
+
+      if (payload.eventType === 'INSERT') {
+        const insertPayload = payload as RealtimePostgresInsertPayload<PostReactionRecord>;
+        postId = insertPayload.new.post_id;
+      } else if (payload.eventType === 'DELETE') {
+        const deletePayload = payload as RealtimePostgresDeletePayload<PostReactionRecord>;
+        postId = deletePayload.old.post_id ?? null;
+      }
+
       if (postId) {
         // 전체 페이지를 revalidate하여 최신 데이터 가져오기
         mutate(undefined, { revalidate: true });
@@ -264,7 +282,7 @@ export default function usePosts(channelId: string, date?: string) {
   );
 
   const handleCommentInsert = useCallback(
-    (payload: any) => {
+    (payload: RealtimePostgresInsertPayload<CommentRecord>) => {
       // 댓글 추가 시 해당 게시글의 댓글 카운트 증가
       const postId = payload.new.post_id;
       const updatedPages = postPages?.map((page) =>

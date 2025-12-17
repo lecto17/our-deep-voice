@@ -1,24 +1,30 @@
 import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabaseBrowserClient';
-import { RealtimeChannel } from '@supabase/supabase-js';
-
-export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE';
-
-export interface PostRealtimePayload {
-  eventType: RealtimeEvent;
-  new: any;
-  old: any;
-  table: 'posts' | 'post_reactions' | 'comments';
-}
+import {
+  RealtimeChannel,
+  RealtimePostgresInsertPayload,
+  RealtimePostgresDeletePayload,
+} from '@supabase/supabase-js';
+import {
+  PostRecord,
+  PostReactionRecord,
+  CommentRecord,
+} from '@/types/realtime';
 
 interface UseRealtimeSubscriptionProps {
   channelId: string;
   currentUserId?: string;
   enabled: boolean;
-  onPostInsert?: (payload: any) => void;
-  onPostDelete?: (payload: any) => void;
-  onReactionChange?: (payload: any) => void;
-  onCommentInsert?: (payload: any) => void;
+  onPostInsert?: (payload: RealtimePostgresInsertPayload<PostRecord>) => void;
+  onPostDelete?: (payload: RealtimePostgresDeletePayload<PostRecord>) => void;
+  onReactionChange?: (
+    payload:
+      | RealtimePostgresInsertPayload<PostReactionRecord>
+      | RealtimePostgresDeletePayload<PostReactionRecord>,
+  ) => void;
+  onCommentInsert?: (
+    payload: RealtimePostgresInsertPayload<CommentRecord>,
+  ) => void;
 }
 
 export function useRealtimeSubscription({
@@ -55,11 +61,14 @@ export function useRealtimeSubscription({
           filter: `channel_id=eq.${channelId}`,
         },
         (payload) => {
+          // 타입 단언: Supabase는 실제로 올바른 데이터를 반환하지만 타입 시스템이 이를 모름
+          const typedPayload = payload as RealtimePostgresInsertPayload<PostRecord>;
+
           // 본인이 작성한 게시글은 제외 (Optimistic Update 사용)
-          if (currentUserId && payload.new.author_id === currentUserId) {
+          if (currentUserId && typedPayload.new.author_id === currentUserId) {
             return;
           }
-          onPostInsert?.(payload);
+          onPostInsert?.(typedPayload);
         },
       )
       .on(
@@ -71,7 +80,8 @@ export function useRealtimeSubscription({
           filter: `channel_id=eq.${channelId}`,
         },
         (payload) => {
-          onPostDelete?.(payload);
+          const typedPayload = payload as RealtimePostgresDeletePayload<PostRecord>;
+          onPostDelete?.(typedPayload);
         },
       );
 
@@ -85,11 +95,13 @@ export function useRealtimeSubscription({
           table: 'post_reactions',
         },
         (payload) => {
+          const typedPayload = payload as RealtimePostgresInsertPayload<PostReactionRecord>;
+
           // 본인의 공감은 제외 (Optimistic Update 사용)
-          if (currentUserId && payload.new.user_id === currentUserId) {
+          if (currentUserId && typedPayload.new.user_id === currentUserId) {
             return;
           }
-          onReactionChange?.(payload);
+          onReactionChange?.(typedPayload);
         },
       )
       .on(
@@ -100,11 +112,13 @@ export function useRealtimeSubscription({
           table: 'post_reactions',
         },
         (payload) => {
+          const typedPayload = payload as RealtimePostgresDeletePayload<PostReactionRecord>;
+
           // 본인의 공감은 제외 (Optimistic Update 사용)
-          if (currentUserId && payload.old.user_id === currentUserId) {
+          if (currentUserId && typedPayload.old.user_id === currentUserId) {
             return;
           }
-          onReactionChange?.(payload);
+          onReactionChange?.(typedPayload);
         },
       );
 
@@ -118,11 +132,13 @@ export function useRealtimeSubscription({
         filter: `channel_id=eq.${channelId}`,
       },
       (payload) => {
+        const typedPayload = payload as RealtimePostgresInsertPayload<CommentRecord>;
+
         // 본인의 댓글은 제외 (Optimistic Update 사용)
-        if (currentUserId && payload.new.author_id === currentUserId) {
+        if (currentUserId && typedPayload.new.author_id === currentUserId) {
           return;
         }
-        onCommentInsert?.(payload);
+        onCommentInsert?.(typedPayload);
       },
     );
 

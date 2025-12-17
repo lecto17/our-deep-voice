@@ -15,6 +15,8 @@ import usePosts from '@/hooks/usePosts';
 import { useParams, useSearchParams } from 'next/navigation';
 import useComment from '@/hooks/useComment';
 import CommentBottomSheet from '../comment/CommentBottomSheet';
+import Image from 'next/image';
+import { BLUR_DATA_URL } from '@/utils/blur-placeholder';
 
 interface PostCardProps {
   post: SupaPost;
@@ -47,6 +49,7 @@ const PostCard = ({ post, priority, addCommentOnPost }: PostCardProps) => {
     id,
     createdAt,
     imageKey,
+    blurImageKey,
     authorId,
     caption,
     commentCount,
@@ -65,17 +68,21 @@ const PostCard = ({ post, priority, addCommentOnPost }: PostCardProps) => {
           location={location}
         />
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       {imageKey && (
         <div className="w-full flex justify-center">
-          <img
+          <Image
             className="max:w-[320px] sm:max-w-[468px] object-cover aspect-square hover:cursor-pointer"
             src={imageKey}
             width={468}
-            height={565}
+            height={468}
+            sizes="(max-width: 640px) 320px, 468px"
+            quality={90}
             alt={`photo by ${authorId}`}
             fetchPriority={priority ? 'high' : 'low'}
             onClick={showPostModal}
+            loading={priority ? 'eager' : 'lazy'}
+            placeholder={blurImageKey ? 'blur' : 'empty'}
+            blurDataURL={blurImageKey || BLUR_DATA_URL}
           />
         </div>
       )}

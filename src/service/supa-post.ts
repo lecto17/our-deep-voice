@@ -2,7 +2,12 @@ import { RawSupaPost, SupaComment, SupaPost } from '@/types/post';
 import { objectMapper } from '@/utils/mapper';
 import { serverSupabase } from '@/lib/supabaseServerClient';
 
-export const getPosts = async (date: string, channelId: string) => {
+export const getPosts = async (
+  date: string,
+  channelId: string,
+  page: number,
+  limit: number,
+) => {
   const client = await serverSupabase();
 
   // posts 테이블과 users 테이블로 만든 뷰에서 게시글 조회
@@ -12,7 +17,8 @@ export const getPosts = async (date: string, channelId: string) => {
     .eq('channel_id', channelId)
     .gte('created_at', `${date}T00:00:00.000`)
     .lte('created_at', `${date}T23:59:59.999`)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(page * limit, page * limit + limit - 1);
 
   if (error) throw error;
 
@@ -62,16 +68,20 @@ export const getPostComments = async (id: string, channelId?: string) => {
 };
 
 export const addPost = async (
-  post: Pick<SupaPost, 'authorId' | 'caption' | 'imageKey' | 'channelId'>,
+  post: Pick<
+    SupaPost,
+    'authorId' | 'caption' | 'imageKey' | 'channelId' | 'blurImageKey'
+  >,
 ) => {
   const client = await serverSupabase();
-  const { authorId, caption, imageKey, channelId } = post;
+  const { authorId, caption, imageKey, channelId, blurImageKey } = post;
   const { data, error } = await client
     .from('posts')
     .insert({
       author_id: authorId,
       caption,
       image_key: imageKey,
+      blur_image_key: blurImageKey,
       channel_id: channelId,
     })
     .select()

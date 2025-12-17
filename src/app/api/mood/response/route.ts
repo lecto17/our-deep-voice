@@ -11,10 +11,7 @@ const getKeyByValue = (map: Map<string, number>, value: number) => {
   return null; // 없을 경우
 };
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ channelId: string }> },
-) {
+export async function GET(request: NextRequest) {
   const headers = request.headers;
   const authorization = headers.get('Authorization') || '';
   const token = authorization.startsWith('Bearer ')
@@ -26,7 +23,9 @@ export async function GET(
   const user = await getAuthenticatedUser(token);
   if (!user) return new Response('UnAuthenticated Error');
 
-  const { channelId } = await params;
+  // channelId를 쿼리 파라미터에서 가져옴
+  const { searchParams } = new URL(request.url);
+  const channelId = searchParams.get('channelId');
   console.log('mood response route channelId', channelId);
 
   if (channelId == null) {

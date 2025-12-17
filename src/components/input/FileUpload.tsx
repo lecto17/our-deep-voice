@@ -5,6 +5,8 @@ import { transferImageToWebP } from '@/utils/utils';
 import Image from 'next/image';
 import { ChangeEvent, useRef, useState } from 'react';
 import { FiImage } from 'react-icons/fi';
+import { toast } from 'sonner';
+import { TOAST_MESSAGES } from '@/config/toastMessages';
 
 type Props = {
   file?: File;
@@ -30,17 +32,27 @@ const FileUpload = ({ file, onChange, size = 'md' }: Props) => {
     const files = e.dataTransfer?.files;
     if (!files || !files?.length) return;
 
-    const converted = (await transferImageToWebP(files[0])) || files[0];
-    setFileAndPreview(converted);
+    try {
+      const converted = (await transferImageToWebP(files[0])) || files[0];
+      setFileAndPreview(converted);
+      toast.success(TOAST_MESSAGES.IMAGE_UPLOAD_SUCCESS);
+    } catch (error) {
+      toast.error(TOAST_MESSAGES.IMAGE_UPLOAD_ERROR);
+    }
   };
 
   const handleChange = async (e: ChangeEvent) => {
     const input = e.target as HTMLInputElement;
     if (!input.files?.[0]) return;
 
-    const converted =
-      (await transferImageToWebP(input.files[0])) || input.files[0];
-    setFileAndPreview(converted);
+    try {
+      const converted =
+        (await transferImageToWebP(input.files[0])) || input.files[0];
+      setFileAndPreview(converted);
+      toast.success(TOAST_MESSAGES.IMAGE_UPLOAD_SUCCESS);
+    } catch (error) {
+      toast.error(TOAST_MESSAGES.IMAGE_UPLOAD_ERROR);
+    }
   };
 
   const handleClick = () => {

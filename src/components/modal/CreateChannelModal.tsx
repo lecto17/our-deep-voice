@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { toast } from 'sonner';
 
 type CreateChannelModalProps = {
   isOpen: boolean;
@@ -29,7 +30,7 @@ const useCreatChannelModal = (
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.description.trim()) {
-      alert('채널명과 설명을 입력해주세요.');
+      toast.error('채널명과 설명을 입력해주세요.');
       return;
     }
 
@@ -67,7 +68,7 @@ const useCreatChannelModal = (
       onClose();
     } catch (error) {
       console.error('Error creating channel:', error);
-      alert('채널 생성 중 오류가 발생했습니다.');
+      toast.error('채널 생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }

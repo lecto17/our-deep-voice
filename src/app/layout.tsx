@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { Open_Sans } from 'next/font/google';
 import './globals.css';
-import GlobalNav from '@/components/navigation/GlobalNav';
-import SWRConfigContext from '@/context/SWRConfigContext';
-import { getAuthenticatedUser } from '@/actions/action';
-import { getMyProfile } from '@/service/supa-user';
 import type { ReactNode } from 'react';
+import { Toaster } from 'sonner';
 
 const openSans = Open_Sans({
   variable: '--font-open-sans',
@@ -112,6 +109,7 @@ export default async function RootLayout({
       </head>
       <body className={`${openSans.className} w-full h-full bg-neutral-50`}>
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

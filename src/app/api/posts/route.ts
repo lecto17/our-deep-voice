@@ -21,9 +21,12 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get('date') || getDateYYYYMMDDWithDash();
   const channelId = searchParams.get('channelId');
 
+  const page = Number(searchParams.get('page')) || 0;
+  const limit = Number(searchParams.get('limit')) || 10;
+
   if (!channelId) return new Response('channelId is required', { status: 400 });
 
-  const data = await getPosts(date, channelId);
+  const data = await getPosts(date, channelId, page, limit);
   const formattedData = data.map((post) => {
     return {
       ...post,

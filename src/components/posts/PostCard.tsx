@@ -16,7 +16,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import useComment from '@/hooks/useComment';
 import CommentBottomSheet from '../comment/CommentBottomSheet';
 import Image from 'next/image';
-import { BLUR_DATA_URL } from '@/utils/image';
+import { BLUR_DATA_URL } from '@/utils/blur-placeholder';
 
 interface PostCardProps {
   post: SupaPost;
@@ -49,6 +49,7 @@ const PostCard = ({ post, priority, addCommentOnPost }: PostCardProps) => {
     id,
     createdAt,
     imageKey,
+    blurImageKey,
     authorId,
     caption,
     commentCount,
@@ -80,6 +81,8 @@ const PostCard = ({ post, priority, addCommentOnPost }: PostCardProps) => {
             fetchPriority={priority ? 'high' : 'low'}
             onClick={showPostModal}
             loading={priority ? 'eager' : 'lazy'}
+            placeholder={blurImageKey ? 'blur' : 'empty'}
+            blurDataURL={blurImageKey || BLUR_DATA_URL}
           />
         </div>
       )}

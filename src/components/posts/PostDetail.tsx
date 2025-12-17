@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 import ReactionList from '../ui/reaction/ReactionList';
 import ReactionSelector from '../ui/reaction/ReactionSelector';
 import Image from 'next/image';
-import { BLUR_DATA_URL } from '@/utils/image';
+import { BLUR_DATA_URL } from '@/utils/blur-placeholder';
 
 const PostDetail = ({
   post,
@@ -24,6 +24,7 @@ const PostDetail = ({
     id,
     createdAt,
     imageKey,
+    blurImageKey,
     caption,
     author: { userName, avatarUrl },
     reactions,
@@ -56,6 +57,8 @@ const PostDetail = ({
             sizes="(max-width: 640px) 350px, 60vw"
             quality={90}
             priority
+            placeholder={blurImageKey ? 'blur' : 'empty'}
+            blurDataURL={blurImageKey || BLUR_DATA_URL}
           />
         </div>
       </div>

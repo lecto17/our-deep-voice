@@ -68,16 +68,20 @@ export const getPostComments = async (id: string, channelId?: string) => {
 };
 
 export const addPost = async (
-  post: Pick<SupaPost, 'authorId' | 'caption' | 'imageKey' | 'channelId'>,
+  post: Pick<
+    SupaPost,
+    'authorId' | 'caption' | 'imageKey' | 'channelId' | 'blurImageKey'
+  >,
 ) => {
   const client = await serverSupabase();
-  const { authorId, caption, imageKey, channelId } = post;
+  const { authorId, caption, imageKey, channelId, blurImageKey } = post;
   const { data, error } = await client
     .from('posts')
     .insert({
       author_id: authorId,
       caption,
       image_key: imageKey,
+      blur_image_key: blurImageKey,
       channel_id: channelId,
     })
     .select()

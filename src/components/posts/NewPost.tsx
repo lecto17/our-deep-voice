@@ -15,7 +15,6 @@ const NewPost = ({ channelId }: { channelId: string }) => {
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [file, setFile] = useState<File | undefined>();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [placeholder, setPlaceholder] = useState('오늘의 일기를 적어보세요 ✍️');
   const [today, setToday] = useState<string>('');

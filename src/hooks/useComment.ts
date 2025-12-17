@@ -1,6 +1,8 @@
 import useSWR, { useSWRConfig } from 'swr';
 import { SupaComment } from '@/types/post';
 import { useCallback, useState } from 'react';
+import { useToastMutation } from './useToastMutation';
+import { TOAST_MESSAGES } from '@/config/toastMessages';
 
 export default function useComment(postId: string) {
   const {
@@ -26,8 +28,21 @@ export default function useComment(postId: string) {
     [postId],
   );
 
+  const {
+    mutate: addCommentMutation,
+    isLoading: isAddingComment,
+  } = useToastMutation(
+    async (comment: SupaComment) => {
+      return updateComment(comment);
+    },
+    {
+      successMessage: TOAST_MESSAGES.COMMENT_CREATE_SUCCESS,
+      errorMessage: TOAST_MESSAGES.COMMENT_CREATE_ERROR,
+    }
+  );
+
   const setComment = useCallback(
-    (comment: SupaComment) => {
+    async (comment: SupaComment) => {
       let newComments;
       if (comment?.id) {
         newComments = comments?.map(({ id, ...rest }) =>
@@ -46,17 +61,19 @@ export default function useComment(postId: string) {
         ];
       }
 
-      mutate(updateComment(comment), {
-        optimisticData: newComments,
-        populateCache: false,
-        revalidate: false,
-        rollbackOnError: true,
-      }).then(() => {
+      // Optimistic update
+      mutate(newComments, { revalidate: false });
+
+      try {
+        await addCommentMutation(comment);
         const searchParams = new URLSearchParams(window.location.search);
-        return globalMutate(`/api/posts?date=${searchParams.get('date')}`);
-      });
+        await globalMutate(`/api/posts?date=${searchParams.get('date')}`);
+      } catch (error) {
+        // 에러 시 롤백
+        mutate(comments, { revalidate: true });
+      }
     },
-    [comments, mutate, updateComment, globalMutate],
+    [comments, mutate, addCommentMutation, globalMutate],
   );
 
   const toggleReactionOnComment = async (commentId: string, emoji: string) => {
@@ -155,7 +172,7 @@ export default function useComment(postId: string) {
       console.error('Failed to toggle reaction:', error);
       // 에러 발생 시 원래 상태로 롤백
       mutate(comments, { revalidate: true });
-      throw error;
+      // 에러는 컴포넌트로 전파하지 않음 (조용히 실패)
     }
   };
 
@@ -167,6 +184,7 @@ export default function useComment(postId: string) {
     comments,
     isLoading,
     setComment,
+    isAddingComment,
     toggleReactionOnComment,
     toggleBottomCommentSection,
     showBottomCommentSection,

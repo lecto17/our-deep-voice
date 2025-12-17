@@ -12,12 +12,20 @@ export const parseDate = (date: string) => {
   return format(date);
 };
 
+/**
+ * 이미지를 WebP로 변환하고 최적화
+ * @description
+ * - 높은 화질 유지 (95% 품질)
+ * - SNS 피드에 적합한 해상도로 조정
+ * - Next.js Image 최적화와 함께 사용
+ */
 export const transferImageToWebP = async (file: File) => {
   const options = {
-    maxSizeMB: 0.01, // 100kb 이하로 압축
-    maxWidthOrHeight: 1024, // 최대 가로/세로 크기
+    maxSizeMB: 5, // 5MB - 화질 우선 (Next.js에서 추가 최적화됨)
+    maxWidthOrHeight: 2048, // 2K 해상도 지원
     useWebWorker: true, // 웹 워커 사용으로 성능 개선
-    initialQuality: 0.7,
+    initialQuality: 0.95, // 95% 품질 - 원본에 가까운 화질
+    fileType: 'image/webp', // WebP 포맷으로 변환 (JPEG보다 30% 작음)
   };
   try {
     const compressedFile = await imageCompression(file, options);

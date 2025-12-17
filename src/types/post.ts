@@ -7,6 +7,7 @@ export type SupaPost = {
   authorId: string;
   caption: string;
   imageKey: string;
+  blurImageKey?: string;
   createdAt: string;
   updatedAt: string | null;
   commentCount: number;

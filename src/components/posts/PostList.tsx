@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
 import { useCallback } from 'react';
 import useInfiniteScroll from '@/hooks/useInfiniteScroll';
+import NewPostsBanner from '@/components/posts/NewPostsBanner';
 
 interface IntersectAreaProps {
   onIntersect: () => void;
@@ -33,15 +34,24 @@ const PostList = ({ channelId }: { channelId: string }) => {
   const date =
     useSearchParams().get('date') ||
     getDateYYYYMMDDWithDash().replaceAll('-', '');
-  const { posts, isLoading, addCommentOnPost, setSize, isLoadingMore } =
-    usePosts(channelId, date);
+  const {
+    posts,
+    isLoading,
+    addCommentOnPost,
+    setSize,
+    isLoadingMore,
+    newPostsCount,
+    handleRefresh,
+  } = usePosts(channelId, date);
 
   const handleIntersect = useCallback(() => {
     setSize((prev) => prev + 1);
   }, [setSize]);
 
   return (
-    <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-10 pb-32">
+    <>
+      <NewPostsBanner count={newPostsCount} onRefresh={handleRefresh} />
+      <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-10 pb-32">
       {isLoading ? (
         <div className="w-full flex justify-center mt-32">
           <GridSpinner color={LOADING_BAR_COLOR} />
@@ -74,6 +84,7 @@ const PostList = ({ channelId }: { channelId: string }) => {
         </div>
       )}
     </ul>
+    </>
   );
 };
 

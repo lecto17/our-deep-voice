@@ -8,7 +8,7 @@ import { BsPlusSquare } from 'react-icons/bs';
 import Avatar from '@/components/avatar/Avatar';
 import { SupaUserProfile } from '@/types/user';
 import Dropdown from '../dropdown/Dropdown';
-import { FaSignOutAlt, FaVoteYea } from 'react-icons/fa';
+import { FaListUl, FaPencilAlt, FaSignOutAlt, FaVoteYea } from 'react-icons/fa';
 import { FaUser } from 'react-icons/fa';
 import { createClient } from '@/lib/supabaseBrowserClient';
 
@@ -65,7 +65,7 @@ const GlobalNav = ({
               {
                 label: (
                   <div className="flex items-center gap-2">
-                    <FaVoteYea />
+                    <FaPencilAlt />
                     <span>게시글</span>
                   </div>
                 ),
@@ -108,6 +108,19 @@ const GlobalNav = ({
                 onClick: () => {
                   setActiveDropdown(null);
                   router.push(`${prefixUrl}/profile`);
+                },
+              },
+              {
+                label: (
+                  <div className="flex items-center gap-2">
+                    <FaListUl />
+                    <span>채널 목록</span>
+                  </div>
+                ),
+                value: 'channelList',
+                onClick: () => {
+                  setActiveDropdown(null);
+                  router.push(`/channels`);
                 },
               },
               {

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm list:*)",
+      "Bash(pnpm add:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm why:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm build)",
+      "Bash(npx tsc --noEmit --strict)",
+      "Bash(npm outdated:*)",
+      "Bash(pnpm update:*)",
+      "Bash(find:*)",
+      "Bash(git diff:*)",
+      "Bash(git checkout:*)"
+    ]
+  }
+}

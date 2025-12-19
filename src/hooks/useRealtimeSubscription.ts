@@ -9,6 +9,7 @@ import {
   PostRecord,
   PostReactionRecord,
   CommentRecord,
+  CommentReactionRecord,
 } from '@/types/realtime';
 
 interface UseRealtimeSubscriptionProps {
@@ -25,6 +26,11 @@ interface UseRealtimeSubscriptionProps {
   onCommentInsert?: (
     payload: RealtimePostgresInsertPayload<CommentRecord>,
   ) => void;
+  onCommentReactionChange?: (
+    payload:
+      | RealtimePostgresInsertPayload<CommentReactionRecord>
+      | RealtimePostgresDeletePayload<CommentReactionRecord>,
+  ) => void;
 }
 
 export function useRealtimeSubscription({
@@ -35,22 +41,26 @@ export function useRealtimeSubscription({
   onPostDelete,
   onReactionChange,
   onCommentInsert,
+  onCommentReactionChange,
 }: UseRealtimeSubscriptionProps) {
   const postsChannelRef = useRef<RealtimeChannel | null>(null);
   const reactionsChannelRef = useRef<RealtimeChannel | null>(null);
   const commentsChannelRef = useRef<RealtimeChannel | null>(null);
+  const commentReactionsChannelRef = useRef<RealtimeChannel | null>(null);
 
   // 콜백 함수들을 ref로 저장하여 의존성 배열에서 제외
   const onPostInsertRef = useRef(onPostInsert);
   const onPostDeleteRef = useRef(onPostDelete);
   const onReactionChangeRef = useRef(onReactionChange);
   const onCommentInsertRef = useRef(onCommentInsert);
+  const onCommentReactionChangeRef = useRef(onCommentReactionChange);
 
   // 콜백 ref 업데이트
   onPostInsertRef.current = onPostInsert;
   onPostDeleteRef.current = onPostDelete;
   onReactionChangeRef.current = onReactionChange;
   onCommentInsertRef.current = onCommentInsert;
+  onCommentReactionChangeRef.current = onCommentReactionChange;
 
   const supabase = createClient();
 
@@ -78,6 +88,7 @@ export function useRealtimeSubscription({
     const postsChannelName = `posts-${channelId}-${suffix}`;
     const reactionsChannelName = `reactions-${channelId}-${suffix}`;
     const commentsChannelName = `comments-${channelId}-${suffix}`;
+    const commentReactionsChannelName = `comment_reactions-${channelId}-${suffix}`;
 
     // posts 테이블 구독 - event를 명시적으로 분리
     // 임시: filter 제거하고 클라이언트에서 필터링 (mismatch 에러 우회)
@@ -251,6 +262,10 @@ export function useRealtimeSubscription({
         supabase.removeChannel(commentsChannelRef.current);
         commentsChannelRef.current = null;
       }
+      if (commentReactionsChannelRef.current) {
+        supabase.removeChannel(commentReactionsChannelRef.current);
+        commentReactionsChannelRef.current = null;
+      }
     };
   }, [channelId, currentUserId, enabled]);
 
@@ -258,6 +273,7 @@ export function useRealtimeSubscription({
     isSubscribed:
       !!postsChannelRef.current ||
       !!reactionsChannelRef.current ||
-      !!commentsChannelRef.current,
+      !!commentsChannelRef.current ||
+      !!commentReactionsChannelRef.current,
   };
 }

@@ -3,6 +3,14 @@ import { SupaComment } from '@/types/post';
 import { useCallback, useState } from 'react';
 import { useToastMutation } from './useToastMutation';
 import { TOAST_MESSAGES } from '@/config/toastMessages';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
+import { CommentReactionRecord } from '@/types/realtime';
+import {
+  RealtimePostgresDeletePayload,
+  RealtimePostgresInsertPayload,
+} from '@supabase/supabase-js';
+import useUser from './useUser';
+import { useParams } from 'next/navigation';
 
 export default function useComment(postId: string) {
   const {
@@ -12,6 +20,8 @@ export default function useComment(postId: string) {
   } = useSWR<SupaComment[]>(`/api/posts/${postId}`);
   const [showBottomCommentSection, setShowBottomCommentSection] =
     useState(false);
+  const { channelId } = useParams();
+  const { user } = useUser(channelId as string);
   const { mutate: globalMutate } = useSWRConfig();
 
   // usePosts의 updatePostLike에는 useCallback을 감싸주지 않음.
@@ -28,18 +38,16 @@ export default function useComment(postId: string) {
     [postId],
   );
 
-  const {
-    mutate: addCommentMutation,
-    isLoading: isAddingComment,
-  } = useToastMutation(
-    async (comment: SupaComment) => {
-      return updateComment(comment);
-    },
-    {
-      successMessage: TOAST_MESSAGES.COMMENT_CREATE_SUCCESS,
-      errorMessage: TOAST_MESSAGES.COMMENT_CREATE_ERROR,
-    }
-  );
+  const { mutate: addCommentMutation, isLoading: isAddingComment } =
+    useToastMutation(
+      async (comment: SupaComment) => {
+        return updateComment(comment);
+      },
+      {
+        successMessage: TOAST_MESSAGES.COMMENT_CREATE_SUCCESS,
+        errorMessage: TOAST_MESSAGES.COMMENT_CREATE_ERROR,
+      },
+    );
 
   const setComment = useCallback(
     async (comment: SupaComment) => {
@@ -175,6 +183,103 @@ export default function useComment(postId: string) {
       // 에러는 컴포넌트로 전파하지 않음 (조용히 실패)
     }
   };
+
+  const handleCommentReactionChange = useCallback(
+    (
+      payload:
+        | RealtimePostgresInsertPayload<CommentReactionRecord>
+        | RealtimePostgresDeletePayload<CommentReactionRecord>,
+    ) => {
+      console.log('👀 [useComment] handleCommentReactionChange:', payload);
+
+      let commentId: string | null = null;
+      let emoji: string | null = null;
+      let type: 'INSERT' | 'DELETE' | null = null;
+
+      if (payload.eventType === 'INSERT') {
+        commentId = payload.new.comment_id;
+        emoji = payload.new.emoji;
+        type = 'INSERT';
+      } else if (payload.eventType === 'DELETE') {
+        commentId = payload.old.comment_id;
+        if ('emoji' in payload.old) {
+          emoji = (payload.old as CommentReactionRecord).emoji;
+        }
+        type = 'DELETE';
+      }
+
+      if (!commentId) return;
+
+      // 현재 로드된 댓글 중에 해당 commentId가 있는지 확인
+      // update function 사용
+      mutate(
+        (currentComments) => {
+          if (!currentComments) return currentComments;
+
+          // 만약 해당 댓글이 목록에 없다면 무시
+          const targetCommentIndex = currentComments.findIndex(
+            (c) => c.id === commentId,
+          );
+          if (targetCommentIndex === -1) return currentComments;
+
+          if (type === 'DELETE' && !emoji) {
+            // emoji 모르면 revalidate
+            console.log('[useComment] Fallback revalidate');
+            mutate(undefined, { revalidate: true });
+            return currentComments;
+          }
+
+          if (type && emoji) {
+            return currentComments.map((comment) => {
+              if (comment.id === commentId) {
+                const existingReaction = comment.reactions.find(
+                  (r) => r.emoji === emoji,
+                );
+                let newReactions = [...comment.reactions];
+
+                if (type === 'INSERT') {
+                  if (existingReaction) {
+                    newReactions = newReactions.map((r) =>
+                      r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
+                    );
+                  } else {
+                    newReactions.push({
+                      emoji: emoji!,
+                      count: 1,
+                      reactedByMe: false,
+                    });
+                  }
+                } else if (type === 'DELETE') {
+                  if (existingReaction) {
+                    newReactions = newReactions
+                      .map((r) =>
+                        r.emoji === emoji
+                          ? { ...r, count: Math.max(0, r.count - 1) }
+                          : r,
+                      )
+                      .filter((r) => r.count > 0);
+                  }
+                }
+                return { ...comment, reactions: newReactions };
+              }
+              return comment;
+            });
+          }
+          return currentComments;
+        },
+        { revalidate: false },
+      );
+    },
+    [mutate],
+  );
+
+  // 댓글 창이 열려있을 때만 구독 활성화
+  useRealtimeSubscription({
+    channelId: (channelId as string) || '',
+    currentUserId: user?.userId,
+    enabled: showBottomCommentSection && !!channelId, // channelId가 있을 때만 구독
+    onCommentReactionChange: handleCommentReactionChange,
+  });
 
   const toggleBottomCommentSection = useCallback(() => {
     setShowBottomCommentSection(!showBottomCommentSection);

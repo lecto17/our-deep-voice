@@ -321,48 +321,57 @@ export default function usePosts(channelId: string, date?: string) {
         return;
       }
 
-      if (type && emoji) {
-        const updatedPages = postPages.map((page) =>
-          page.map((post) => {
-            if (post.id === postId) {
-              const existingReaction = post.reactions.find(
-                (r) => r.emoji === emoji,
-              );
-              let newReactions = [...post.reactions];
+      mutate(
+        (currentPages) => {
+          if (!currentPages) return currentPages;
 
-              if (type === 'INSERT') {
-                if (existingReaction) {
-                  newReactions = newReactions.map((r) =>
-                    r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
-                  );
-                } else {
-                  newReactions.push({ emoji, count: 1, reactedByMe: false });
+          const updatedPages = currentPages.map((page) =>
+            page.map((post) => {
+              if (post.id === postId) {
+                // 이 안쪽 로직은 그대로 사용하되, post는 currentPages의 최신 상태임.
+                const existingReaction = post.reactions.find(
+                  (r) => r.emoji === emoji,
+                );
+                let newReactions = [...post.reactions];
+
+                if (type === 'INSERT') {
+                  if (existingReaction) {
+                    newReactions = newReactions.map((r) =>
+                      r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
+                    );
+                  } else {
+                    newReactions.push({
+                      emoji: emoji!,
+                      count: 1,
+                      reactedByMe: false,
+                    });
+                  }
+                } else if (type === 'DELETE') {
+                  if (existingReaction) {
+                    newReactions = newReactions
+                      .map((r) =>
+                        r.emoji === emoji
+                          ? { ...r, count: Math.max(0, r.count - 1) }
+                          : r,
+                      )
+                      .filter((r) => r.count > 0);
+                  }
                 }
-              } else if (type === 'DELETE') {
-                if (existingReaction) {
-                  newReactions = newReactions
-                    .map((r) =>
-                      r.emoji === emoji
-                        ? { ...r, count: Math.max(0, r.count - 1) }
-                        : r,
-                    )
-                    .filter((r) => r.count > 0); // count 0이면 제거? UI 정책에 따라 결정. 보통 0이면 숨김.
-                }
+
+                return {
+                  ...post,
+                  reactions: newReactions,
+                };
               }
-
-              return {
-                ...post,
-                reactions: newReactions,
-              };
-            }
-            return post;
-          }),
-        );
-
-        mutate(updatedPages, { revalidate: false });
-      }
+              return post;
+            }),
+          );
+          return updatedPages;
+        },
+        { revalidate: false },
+      );
     },
-    [mutate, postPages, user?.userId],
+    [mutate, user?.userId], // postPages 의존성 제거 (functional update 사용)
   );
 
   const handleCommentInsert = useCallback(
@@ -377,14 +386,19 @@ export default function usePosts(channelId: string, date?: string) {
         return;
       }
 
-      const updatedPages = postPages?.map((page) =>
-        page.map((post) =>
-          post.id === postId
-            ? { ...post, commentCount: post.commentCount + 1 }
-            : post,
-        ),
+      mutate(
+        (currentPages) => {
+          if (!currentPages) return currentPages;
+          return currentPages.map((page) =>
+            page.map((post) =>
+              post.id === postId
+                ? { ...post, commentCount: post.commentCount + 1 }
+                : post,
+            ),
+          );
+        },
+        { revalidate: false },
       );
-      mutate(updatedPages, { revalidate: false });
 
       // 게시글 상세 조회(댓글 목록 등) 캐시 무효화 -> 상세 진입 시 최신 댓글 보이게
       globalMutate(
@@ -394,7 +408,7 @@ export default function usePosts(channelId: string, date?: string) {
         { revalidate: true },
       );
     },
-    [postPages, mutate, globalMutate, user?.userId],
+    [mutate, globalMutate, user?.userId], // postPages 의존성 제거
   );
 
   // 실시간 구독 활성화 (오늘 날짜일 때만)

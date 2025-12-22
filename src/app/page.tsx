@@ -1,16 +1,14 @@
 import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/actions/action';
 
-type HomePageProps = {
-  searchParams: Promise<{ date: string }>;
-};
-
-export default async function HomePage({ searchParams }: HomePageProps) {
+export default async function HomePage() {
   const user = await getAuthenticatedUser();
 
   if (!user) {
     return redirect('/auth/login');
   }
+
+  console.log('redirect to channels');
 
   return redirect('/channels');
 }

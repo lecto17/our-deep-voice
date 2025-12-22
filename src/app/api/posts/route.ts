@@ -26,8 +26,12 @@ export async function GET(request: NextRequest) {
 
   if (!channelId) return new Response('channelId is required', { status: 400 });
 
-  const data = await getPosts(date, channelId, page, limit);
+  const data = await getPosts(date, channelId, page, limit, user.id);
   const formattedData = data.map((post) => {
+    // console.log('[API] Post data check:', {
+    //   id: post.id,
+    //   reactions: post.reactions,
+    // });
     return {
       ...post,
       reactions:
@@ -37,10 +41,21 @@ export async function GET(request: NextRequest) {
             count: number;
             reactionUserIdList: string[];
           }) => {
+            const list =
+              reaction.reactionUserIdList ||
+              (reaction as unknown as { reaction_user_id_list: string[] })
+                .reaction_user_id_list ||
+              [];
+            // console.log('[API] Reaction check:', {
+            //   emoji: reaction.emoji,
+            //   listLength: list?.length,
+            //   firstItem: list?.[0],
+            //   userId: user.id
+            // });
             return {
               emoji: reaction.emoji,
               count: reaction.count,
-              reactedByMe: reaction.reactionUserIdList.includes(user.id),
+              reactedByMe: Array.isArray(list) ? list.includes(user.id) : false,
             };
           },
         ) || [],

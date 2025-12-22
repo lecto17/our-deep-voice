@@ -119,17 +119,38 @@ const PostList = ({ channelId }: { channelId: string }) => {
         ) : (
           <motion.div
             variants={item}
-            className="w-full flex flex-col items-center justify-center mt-32 text-center"
+            className="w-full flex flex-col items-center justify-center mt-20 text-center px-4"
           >
-            <div className="text-6xl mb-4">📭</div>
-            <h3 className="text-xl font-semibold text-text-primary mb-2">
+            <div className="relative mb-6">
+              <div className="text-8xl">📭</div>
+              <motion.div
+                className="absolute -top-2 -right-2 text-4xl"
+                animate={{
+                  rotate: [0, 10, -10, 0],
+                  y: [0, -5, 0],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              >
+                ✨
+              </motion.div>
+            </div>
+            <h3 className="text-2xl font-bold text-text-primary mb-3">
               아직 게시글이 없어요
             </h3>
-            <p className="text-text-secondary whitespace-pre-line">
+            <p className="text-text-secondary text-base mb-6 whitespace-pre-line max-w-md">
               {
-                '해당 일자에 게시글이 없습니다.\n가장 먼저 이야기를 들려주세요! 🙂'
+                '해당 일자에 게시글이 없습니다.\n가장 먼저 이야기를 들려주세요!'
               }
             </p>
+            <div className="bg-surface-subtle/50 border border-surface-subtle rounded-2xl px-6 py-4 max-w-sm">
+              <p className="text-text-tertiary text-sm">
+                💡 첫 번째 목소리가 되어 커뮤니티를 시작해보세요
+              </p>
+            </div>
           </motion.div>
         )}
       </motion.ul>

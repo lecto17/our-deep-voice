@@ -33,6 +33,11 @@ export default {
       borderRadius: {
         '3xl': '1.5rem',
       },
+      keyframes: {
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
     },
   },
   plugins: [],

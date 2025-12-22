@@ -1,4 +1,3 @@
-// channels/[channelId]/not-found.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';

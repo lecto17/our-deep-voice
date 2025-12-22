@@ -39,5 +39,4 @@ export type TransformedReactionStats = Omit<
   'reactionUserIdList'
 > & {
   reactedByMe: boolean;
-  reactionUserIdList?: string[];
 };

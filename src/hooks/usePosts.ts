@@ -327,6 +327,8 @@ export default function usePosts(channelId: string, date?: string) {
                           ...r,
                           count: r.count + 1,
                           reactionUserIdList: updatedList,
+                          reactedByMe:
+                            user?.userId === userId ? true : r.reactedByMe,
                         };
                       }
                       return r;
@@ -335,7 +337,7 @@ export default function usePosts(channelId: string, date?: string) {
                     newReactions.push({
                       emoji: emoji!,
                       count: 1,
-                      reactedByMe: false,
+                      reactedByMe: user?.userId === userId,
                       reactionUserIdList: [userId!],
                     });
                   }
@@ -351,6 +353,8 @@ export default function usePosts(channelId: string, date?: string) {
                             ...r,
                             count: Math.max(0, r.count - 1),
                             reactionUserIdList: updatedList,
+                            reactedByMe:
+                              user?.userId === userId ? false : r.reactedByMe,
                           };
                         }
                         return r;

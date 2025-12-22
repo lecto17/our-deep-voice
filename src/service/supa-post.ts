@@ -162,6 +162,10 @@ export const addReactionOnPost = async (
   emoji: string,
 ) => {
   const client = await serverSupabase();
+  const {
+    data: { user: authUser },
+  } = await client.auth.getUser();
+
   const { error } = await client.from('post_reactions').insert({
     post_id: postId,
     user_id: userId,

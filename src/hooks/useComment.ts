@@ -190,8 +190,6 @@ export default function useComment(postId: string) {
         | RealtimePostgresInsertPayload<CommentReactionRecord>
         | RealtimePostgresDeletePayload<CommentReactionRecord>,
     ) => {
-      console.log('👀 [useComment] handleCommentReactionChange:', payload);
-
       let commentId: string | null = null;
       let emoji: string | null = null;
       let type: 'INSERT' | 'DELETE' | null = null;
@@ -201,7 +199,7 @@ export default function useComment(postId: string) {
         emoji = payload.new.emoji;
         type = 'INSERT';
       } else if (payload.eventType === 'DELETE') {
-        commentId = payload.old.comment_id;
+        commentId = payload.old.comment_id ?? null;
         if ('emoji' in payload.old) {
           emoji = (payload.old as CommentReactionRecord).emoji;
         }
@@ -224,7 +222,6 @@ export default function useComment(postId: string) {
 
           if (type === 'DELETE' && !emoji) {
             // emoji 모르면 revalidate
-            console.log('[useComment] Fallback revalidate');
             mutate(undefined, { revalidate: true });
             return currentComments;
           }
@@ -277,7 +274,7 @@ export default function useComment(postId: string) {
   useRealtimeSubscription({
     channelId: (channelId as string) || '',
     currentUserId: user?.userId,
-    enabled: showBottomCommentSection && !!channelId, // channelId가 있을 때만 구독
+    enabled: !!channelId, // channelId가 있으면 항상 구독 (Desktop 등에서 댓글이 보일 수 있음)
     onCommentReactionChange: handleCommentReactionChange,
   });
 

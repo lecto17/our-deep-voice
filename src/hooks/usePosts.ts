@@ -17,11 +17,10 @@ import {
   PostRecord,
   PostReactionRecord,
   CommentRecord,
+  CommentReactionRecord,
 } from '@/types/realtime';
 
 export default function usePosts(channelId: string, date?: string) {
-  console.log('🔴🔴🔴 [usePosts] 함수 시작!!! 🔴🔴🔴');
-
   const { postsKey } = useCacheKeyContext();
   const today = getDateYYYYMMDDWithDash().replaceAll('-', '');
   const key = `${postsKey}?channelId=${channelId}&date=${date || today}`;
@@ -29,15 +28,11 @@ export default function usePosts(channelId: string, date?: string) {
   // 현재 사용자 정보
   const { user } = useUser(channelId);
 
-  console.log('🟢🟢🟢 [usePosts] user 정보:', user);
-
   // 새 게시글 카운트 상태
   const [newPostsCount, setNewPostsCount] = useState(0);
 
   // 오늘 날짜인지 확인 (실시간 구독은 오늘만 활성화)
   const isToday = !date || date === today;
-  console.log('🔵🔵🔵 [usePosts] isToday 확인:', { date, today, isToday });
-
   const getKey = (pageIndex: number, previousPageData: SupaPost[]) => {
     if (previousPageData && !previousPageData.length) return null; // reached the end
     return `${key}&page=${pageIndex}&limit=10`; // SWR key
@@ -247,7 +242,6 @@ export default function usePosts(channelId: string, date?: string) {
 
   // 실시간 이벤트 핸들러
   const handlePostInsert = useCallback(() => {
-    console.log('[usePosts] handlePostInsert 호출됨');
     // 새 게시글이 추가되면 카운트 증가
     setNewPostsCount((prev) => prev + 1);
     toast.info('다른 사용자가 새 글을 남겼어요!');
@@ -271,8 +265,6 @@ export default function usePosts(channelId: string, date?: string) {
         | RealtimePostgresInsertPayload<PostReactionRecord>
         | RealtimePostgresDeletePayload<PostReactionRecord>,
     ) => {
-      console.log('👀 [usePosts] handleReactionChange payload:', payload);
-
       let postId: string | null = null;
       let emoji: string | null = null;
       let type: 'INSERT' | 'DELETE' | null = null;
@@ -298,27 +290,13 @@ export default function usePosts(channelId: string, date?: string) {
         type = 'DELETE';
       }
 
-      console.log('[usePosts] Reaction Change Parsed:', {
-        postId,
-        emoji,
-        type,
-        userId,
-      });
-
       if (!postId) return;
 
       // 내 액션은 이미 Optimistic Update로 처리되었을 수 있음 -> 중복 처리 방지
       // (단, 다른 기기에서의 내 액션은 처리해야 함... 여기서는 currentUser check 사용)
       if (user?.userId && userId === user.userId) {
-        console.log('[usePosts] 내 리액션이므로 무시 (Optimistic Update 가정)');
         return;
       }
-
-      // Debug: 캐시 키 전체 출력
-      console.log(
-        '🔍 [Debug] Current SWR Cache Keys:',
-        Array.from(cache.keys()),
-      );
 
       mutate(
         (currentPages) => {
@@ -400,13 +378,11 @@ export default function usePosts(channelId: string, date?: string) {
 
   const handleCommentInsert = useCallback(
     (payload: RealtimePostgresInsertPayload<CommentRecord>) => {
-      console.log('💬 [usePosts] handleCommentInsert:', payload);
       // 댓글 추가 시 해당 게시글의 댓글 카운트 증가
       const postId = payload.new.post_id;
       const authorId = payload.new.author_id;
 
       if (user?.userId && authorId === user.userId) {
-        console.log('[usePosts] 내 댓글이므로 무시 (Optimistic Update 가정)');
         return;
       }
 

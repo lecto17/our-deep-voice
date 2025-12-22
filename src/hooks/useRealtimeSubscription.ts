@@ -65,22 +65,9 @@ export function useRealtimeSubscription({
   const supabase = createClient();
 
   useEffect(() => {
-    console.log('[Realtime Hook] useEffect 실행됨. 상태:', {
-      enabled,
-      channelId,
-      currentUserId,
-    });
-
     if (!enabled || !channelId || !supabase) {
-      console.log('[Realtime Hook] 구독 조건 불충족으로 중단:', {
-        enabled,
-        channelId,
-        hasSupabase: !!supabase,
-      });
       return;
     }
-
-    console.log('[Realtime] 구독 시작 시도...');
 
     // 각 테이블마다 별도의 채널 생성 (mismatch 에러 방지)
     // 컴포넌트 인스턴스마다 고유한 채널명을 사용하여 바인딩 충돌 방지
@@ -92,9 +79,6 @@ export function useRealtimeSubscription({
 
     // posts 테이블 구독 - event를 명시적으로 분리
     // 임시: filter 제거하고 클라이언트에서 필터링 (mismatch 에러 우회)
-    console.log('[Realtime] posts 채널 생성 및 구독 (필터 없음)', {
-      channelId,
-    });
     postsChannelRef.current = supabase
       .channel(postsChannelName)
       .on(
@@ -105,26 +89,18 @@ export function useRealtimeSubscription({
           table: 'posts',
         },
         (payload) => {
-          console.log('🚀🚀🚀 [Realtime] posts INSERT 수신!!! 🚀🚀🚀', payload);
-
           const typedPayload =
             payload as RealtimePostgresInsertPayload<PostRecord>;
 
           // 채널 필터링: 다른 채널의 게시글 제외
           if (typedPayload.new.channel_id !== channelId) {
-            console.log('[Realtime] 다른 채널 게시글이므로 제외', {
-              received: typedPayload.new.channel_id,
-              expected: channelId,
-            });
             return;
           }
 
           // 본인이 작성한 게시글은 제외 (Optimistic Update 사용)
           if (currentUserId && typedPayload.new.author_id === currentUserId) {
-            console.log('[Realtime] 본인 게시글이므로 제외');
             return;
           }
-          console.log('[Realtime] onPostInsert 호출');
           onPostInsertRef.current?.(typedPayload);
         },
       )
@@ -136,7 +112,6 @@ export function useRealtimeSubscription({
           table: 'posts',
         },
         (payload) => {
-          console.log('[Realtime] posts DELETE 수신!', payload);
           const typedPayload =
             payload as RealtimePostgresDeletePayload<PostRecord>;
 
@@ -149,7 +124,6 @@ export function useRealtimeSubscription({
         },
       )
       .subscribe((status, err) => {
-        console.log('[Realtime] posts 구독 상태:', status);
         if (err) {
           console.error('[Realtime] posts 구독 오류:', err);
         }
@@ -157,7 +131,6 @@ export function useRealtimeSubscription({
 
     // post_reactions 테이블 구독 - event를 명시적으로 분리
     // 참고: post_reactions 테이블에는 channel_id가 없으므로 filter 없이 구독
-    console.log('[Realtime] reactions 채널 생성 및 구독 (필터 없음)');
     reactionsChannelRef.current = supabase
       .channel(reactionsChannelName)
       .on(
@@ -168,8 +141,6 @@ export function useRealtimeSubscription({
           table: 'post_reactions',
         },
         (payload) => {
-          console.log('🚀 [Realtime] reactions INSERT 수신!', payload);
-
           const typedPayload =
             payload as RealtimePostgresInsertPayload<PostReactionRecord>;
 
@@ -188,8 +159,6 @@ export function useRealtimeSubscription({
           table: 'post_reactions',
         },
         (payload) => {
-          console.log('[Realtime] reactions DELETE 수신!', payload);
-
           const typedPayload =
             payload as RealtimePostgresDeletePayload<PostReactionRecord>;
 
@@ -201,7 +170,6 @@ export function useRealtimeSubscription({
         },
       )
       .subscribe((status, err) => {
-        console.log('[Realtime] reactions 구독 상태:', status);
         if (err) {
           console.error('[Realtime] reactions 구독 오류:', err);
         }
@@ -209,9 +177,6 @@ export function useRealtimeSubscription({
 
     // comments 테이블 구독 - event를 명시적으로 분리
     // 임시: filter 제거하고 클라이언트에서 필터링 (mismatch 에러 우회)
-    console.log('[Realtime] comments 채널 생성 및 구독 (필터 없음)', {
-      channelId,
-    });
     commentsChannelRef.current = supabase
       .channel(commentsChannelName)
       .on(
@@ -222,14 +187,11 @@ export function useRealtimeSubscription({
           table: 'comments',
         },
         (payload) => {
-          console.log('🚀 [Realtime] comments INSERT 수신!', payload);
-
           const typedPayload =
             payload as RealtimePostgresInsertPayload<CommentRecord>;
 
           // 채널 필터링: 다른 채널의 댓글 제외
           if (typedPayload.new.channel_id !== channelId) {
-            console.log('[Realtime] 다른 채널 댓글이므로 제외');
             return;
           }
 
@@ -241,15 +203,58 @@ export function useRealtimeSubscription({
         },
       )
       .subscribe((status, err) => {
-        console.log('[Realtime] comments 구독 상태:', status);
         if (err) {
           console.error('[Realtime] comments 구독 오류:', err);
         }
       });
 
+    // comment_reactions 테이블 구독 - event를 명시적으로 분리
+    commentReactionsChannelRef.current = supabase
+      .channel(commentReactionsChannelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comment_reactions',
+        },
+        (payload) => {
+          const typedPayload =
+            payload as RealtimePostgresInsertPayload<CommentReactionRecord>;
+
+          // 본인의 공감은 제외 (Optimistic Update 사용)
+          if (currentUserId && typedPayload.new.user_id === currentUserId) {
+            return;
+          }
+          onCommentReactionChangeRef.current?.(typedPayload);
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_reactions',
+        },
+        (payload) => {
+          const typedPayload =
+            payload as RealtimePostgresDeletePayload<CommentReactionRecord>;
+
+          // 본인의 공감은 제외 (Optimistic Update 사용)
+          if (currentUserId && typedPayload.old.user_id === currentUserId) {
+            return;
+          }
+          onCommentReactionChangeRef.current?.(typedPayload);
+        },
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('[Realtime] comment_reactions 구독 오류:', err);
+        }
+      });
+
     // 클린업 함수
     return () => {
-      console.log('[Realtime] 모든 구독 해제');
       if (postsChannelRef.current) {
         supabase.removeChannel(postsChannelRef.current);
         postsChannelRef.current = null;

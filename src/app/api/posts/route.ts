@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   if (!channelId) return new Response('channelId is required', { status: 400 });
 
-  const data = await getPosts(date, channelId, page, limit);
+  const data = await getPosts(date, channelId, page, limit, user.id);
   const formattedData = data.map((post) => {
     // console.log('[API] Post data check:', {
     //   id: post.id,

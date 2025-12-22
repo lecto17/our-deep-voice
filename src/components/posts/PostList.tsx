@@ -1,6 +1,7 @@
 'use client';
 import { LOADING_BAR_COLOR } from '@/constants/color';
 import PostCard from '@/components/posts/PostCard';
+import PostSkeleton from '@/components/posts/PostSkeleton';
 import GridSpinner from '@/components/spinner/GridSpinner';
 import usePosts from '@/hooks/usePosts';
 import { useSearchParams } from 'next/navigation';
@@ -64,10 +65,13 @@ const PostList = ({ channelId }: { channelId: string }) => {
         count={newPostsCount}
         onRefresh={handleRefresh}
       />
-      <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-10 pb-32">
+      <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-6 pb-32 bg-surface-page bg-opacity-50">
         {isLoading ? (
-          <div className="w-full flex justify-center mt-32">
-            <GridSpinner color={LOADING_BAR_COLOR} />
+          <div className="w-full flex flex-col items-center mt-4">
+            {/* Show 3 skeletons */}
+            {Array.from({ length: 3 }).map((_, i) => (
+              <PostSkeleton key={i} />
+            ))}
           </div>
         ) : posts != null && posts.length > 0 ? (
           <>
@@ -91,10 +95,14 @@ const PostList = ({ channelId }: { channelId: string }) => {
             />
           </>
         ) : (
-          <div className="w-full flex justify-center mt-32">
-            <p className="text-gray-500 whitespace-pre-line">
+          <div className="w-full flex flex-col items-center justify-center mt-32 text-center">
+            <div className="text-6xl mb-4">📭</div>
+            <h3 className="text-xl font-semibold text-text-primary mb-2">
+              아직 게시글이 없어요
+            </h3>
+            <p className="text-text-secondary whitespace-pre-line">
               {
-                '해당 일자에 게시글이 없습니다.\n\n먼저 게시글을 등록해보세요 🙂'
+                '해당 일자에 게시글이 없습니다.\n가장 먼저 이야기를 들려주세요! 🙂'
               }
             </p>
           </div>

@@ -9,6 +9,11 @@ import PostUserAvatar from '@/components/posts/PostUserAvatar';
 import { SupaComment, SupaPost } from '@/types/post';
 import { parseDate } from '@/utils/utils';
 import { useState } from 'react';
+import { format, register } from 'timeago.js';
+import ko from 'timeago.js/lib/lang/ko';
+
+register('ko', ko);
+
 import ReactionSelector from '../ui/reaction/ReactionSelector';
 import ReactionList from '../ui/reaction/ReactionList';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -61,20 +66,25 @@ const PostCard = ({
   } = post;
 
   return (
-    <article className="border border-gray-200 shadow-md rounded-lg p-3 mb-3 w-[90%] min-w-[320px] sm:min-w-[468px]">
-      <div className="flex w-fit items-center mb-3">
+    <article className="bg-surface-card border border-surface-subtle shadow-md hover:shadow-lg transition-shadow duration-300 rounded-3xl p-6 mb-4 w-[90%] min-w-[320px] sm:min-w-[468px]">
+      <div className="flex w-fit items-center mb-4">
         <PostUserAvatar
           user={{
             userName,
             avatarUrl,
           }}
+          avatarSize="middle"
           location={location}
-        />
+        >
+          <span className="text-text-tertiary text-xs mt-0.5">
+            {format(createdAt, 'ko')}
+          </span>
+        </PostUserAvatar>
       </div>
       {imageKey && (
-        <div className="w-full flex justify-center">
+        <div className="w-full flex justify-center mb-4">
           <Image
-            className="max:w-[320px] sm:max-w-[468px] object-cover aspect-square hover:cursor-pointer"
+            className="w-full max-w-[468px] object-cover aspect-square rounded-2xl hover:cursor-pointer hover:brightness-105 transition-all duration-300"
             src={imageKey}
             width={468}
             height={468}
@@ -100,34 +110,45 @@ const PostCard = ({
           </ModalContainer>
         </ModalPortal>
       )}
-      <div className="my-2">
-        <ReactionSelector
-          onReactionClick={toggleReactionOnPost}
-          postOrCommentId={post.id}
-        />
-      </div>
 
-      <ReactionList
-        postOrCommentId={post.id}
-        reactions={reactions}
-        onReactionClick={toggleReactionOnPost}
-      />
-      <div className="py-2">
-        <p className="flex items-center whitespace-pre-line mb-1 sm:mb-2">
+      <div className="mb-4">
+        <p
+          className={`whitespace-pre-line text-text-primary ${
+            caption.length < 50 ? 'text-lg font-medium' : 'text-base'
+          }`}
+        >
           {caption}
         </p>
-        <p className="mb-2 sm:mb-5 text-gray-400 text-sm">
-          {parseDate(createdAt)}
-        </p>
-        <CommentCount
-          countOfComments={commentCount}
-          onClick={toggleBottomCommentSection}
-        />
+      </div>
+
+      <div className="flex items-center justify-between pt-4 border-t border-surface-subtle">
+        <div className="flex items-center gap-2">
+          <ReactionSelector
+            onReactionClick={toggleReactionOnPost}
+            postOrCommentId={post.id}
+          />
+          <ReactionList
+            postOrCommentId={post.id}
+            reactions={reactions}
+            onReactionClick={toggleReactionOnPost}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <CommentCount
+            countOfComments={commentCount}
+            onClick={toggleBottomCommentSection}
+          />
+        </div>
+      </div>
+
+      <div className="mt-3">
         <CommentForm
           postId={post.id}
           onSubmit={addCommentOnPost}
         />
       </div>
+
       {showBottomCommentSection && (
         <CommentBottomSheet
           open={showBottomCommentSection}

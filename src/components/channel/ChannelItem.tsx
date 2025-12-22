@@ -78,19 +78,16 @@ export default function ChannelItem({
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-surface-subtle w-full">
           <div className="flex items-center gap-3 text-xs flex-wrap">
-            <span className="flex items-center gap-1.5 text-text-secondary font-medium">
+            <div className="flex items-center gap-1 text-text-secondary font-medium">
               <span className="text-base">👥</span>
-              <span>{channel.memberCount}명</span>
-            </span>
-            {channel.needsPassword && (
-              <span className="flex items-center gap-1.5 text-text-tertiary">
-                <span className="text-sm">🔒</span>
-                <span>비공개</span>
-              </span>
-            )}
+              <span>{channel.memberCount}명 참여 중</span>
+            </div>
           </div>
 
-          <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex-shrink-0"
+          >
             {channel.isJoined ? (
               <button
                 onClick={(e) =>
@@ -111,7 +108,7 @@ export default function ChannelItem({
                   }
                   handleParticipateChannel(channel.id);
                 }}
-                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap"
+                className="px-2 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap"
               >
                 참여하기
               </button>

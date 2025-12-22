@@ -142,13 +142,11 @@ const PostList = ({ channelId }: { channelId: string }) => {
               아직 게시글이 없어요
             </h3>
             <p className="text-text-secondary text-base mb-6 whitespace-pre-line max-w-md">
-              {
-                '해당 일자에 게시글이 없습니다.\n가장 먼저 이야기를 들려주세요!'
-              }
+              {'해당 일자에 게시글이 없습니다.\n가장 먼저 이야기를 들려주세요!'}
             </p>
             <div className="bg-surface-subtle/50 border border-surface-subtle rounded-2xl px-6 py-4 max-w-sm">
               <p className="text-text-tertiary text-sm">
-                💡 첫 번째 목소리가 되어 커뮤니티를 시작해보세요
+                💡 첫 번째로 일상을 공유해보세요
               </p>
             </div>
           </motion.div>

@@ -42,10 +42,10 @@ const ChannelList = ({
     <div className="flex-1 flex flex-col min-h-0">
       <div className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-text-primary mb-1">
-          Where would you like to dive in today?
+          이웃과 일상 속 작은 이야기를 나누고 들어보세요.
         </h1>
         <p className="text-text-secondary text-sm">
-          Discover communities and share your voice.
+          어떤 일상의 이야기든 환영입니다.
         </p>
       </div>
 

@@ -7,6 +7,7 @@ import ReactionList from '../ui/reaction/ReactionList';
 import { TransformedReactionStats } from '@/types/reaction';
 import ReactionSelector from '../ui/reaction/ReactionSelector';
 import { parseDate } from '@/utils/utils';
+import { motion } from 'framer-motion';
 
 type CommentItemProps = {
   comment: SupaComment;
@@ -22,8 +23,17 @@ const CommentItem = ({
   onReactionClick,
 }: CommentItemProps) => {
   return (
-    <div className="group">
-      <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+    <motion.div
+      className="group"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <motion.div
+        className="flex items-start space-x-3 p-3 rounded-lg hover:bg-surface-subtle transition-colors duration-200"
+        whileHover={{ x: 4 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      >
         <div className="flex-shrink-0">
           <Avatar
             user={user}
@@ -36,15 +46,15 @@ const CommentItem = ({
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold text-gray-900 text-sm">
+                <span className="font-semibold text-text-primary text-sm">
                   {user?.userName}
                 </span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-text-tertiary">•</span>
+                <span className="text-xs text-text-secondary">
                   {parseDate(createdAt || '')}
                 </span>
               </div>
-              <p className="text-gray-800 text-sm leading-relaxed break-words">
+              <p className="text-text-primary text-sm leading-relaxed break-words">
                 {body}
               </p>
             </div>
@@ -65,8 +75,8 @@ const CommentItem = ({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

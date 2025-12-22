@@ -34,8 +34,8 @@ const ReactionList = ({
             onClick={() => onReactionClick(postOrCommentId, emoji)}
             className={`flex items-center space-x-1 rounded-full px-2 py-0.5 transition-colors cursor-pointer ${
               reactedByMe
-                ? 'bg-blue-300 text-white'
-                : 'bg-gray-200 hover:bg-gray-300'
+                ? 'bg-brand-50 text-brand-600 border border-brand-600'
+                : 'bg-surface-subtle hover:bg-surface-subtle/80'
             }`}
             disabled={!onReactionClick}
             whileHover={{ scale: 1.1 }}
@@ -44,7 +44,9 @@ const ReactionList = ({
           >
             <span className="text-sm sm:text-base">{emoji}</span>
             {showCount && count > 0 && (
-              <span className="text-gray-600 font-medium">{count}</span>
+              <span className={`font-medium text-xs ${reactedByMe ? 'text-brand-600' : 'text-text-secondary'}`}>
+                {count}
+              </span>
             )}
           </motion.button>
         );

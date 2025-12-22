@@ -1,5 +1,6 @@
 import { Channel } from '@/types/channel';
 import ChannelItem from './ChannelItem';
+import { motion } from 'framer-motion';
 
 type ChannelListProps = {
   channels: Channel[];
@@ -13,6 +14,21 @@ type ChannelListProps = {
     needsPassword?: boolean,
   ) => void;
   handleParticipateChannel: (channelId: string) => void;
+};
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, scale: 0.95 },
+  show: { opacity: 1, scale: 1 },
 };
 
 const ChannelList = ({
@@ -33,7 +49,12 @@ const ChannelList = ({
         </p>
       </div>
 
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-32">
+      <motion.ul
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-32"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
         {channels.length === 0 ? (
           <div className="col-span-full flex h-64 items-center justify-center bg-surface-subtle rounded-3xl border border-dashed border-gray-300">
             <div className="text-center">
@@ -48,17 +69,22 @@ const ChannelList = ({
           </div>
         ) : (
           channels.map((channel) => (
-            <ChannelItem
+            <motion.div
               key={channel.id}
-              channel={channel}
-              handleSetActiveChannelId={handleSetActiveChannelId}
-              setIsPasswordModalOpen={setIsPasswordModalOpen}
-              handleChannelAction={handleChannelAction}
-              handleParticipateChannel={handleParticipateChannel}
-            />
+              variants={item}
+              className="h-full"
+            >
+              <ChannelItem
+                channel={channel}
+                handleSetActiveChannelId={handleSetActiveChannelId}
+                setIsPasswordModalOpen={setIsPasswordModalOpen}
+                handleChannelAction={handleChannelAction}
+                handleParticipateChannel={handleParticipateChannel}
+              />
+            </motion.div>
           ))
         )}
-      </ul>
+      </motion.ul>
     </div>
   );
 };

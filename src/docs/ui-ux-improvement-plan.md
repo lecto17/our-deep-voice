@@ -78,20 +78,20 @@ Move away from raw Tailwind colors (e.g., `bg-gray-100`) to semantic design toke
 
 ### Phase 1: Foundation
 
-- [ ] Install **Pretendard** variable font.
-- [ ] Configure `tailwind.config.ts` with new color extension (e.g., `colors: { brand: ... }`).
-- [ ] Create `globals.css` variables for theme abstraction (Light/Dark mode readiness).
+- [x] Install **Pretendard** variable font.
+- [x] Configure `tailwind.config.ts` with new color extension (e.g., `colors: { brand: ... }`).
+- [x] Create `globals.css` variables for theme abstraction (Light/Dark mode readiness).
 
 ### Phase 2: Component Refactor
 
-- [ ] Refactor `PostCard` to use new tokens.
-- [ ] Update `PostList` layout.
-- [ ] Redesign `ChannelList` into a Grid view.
+- [x] Refactor `PostCard` to use new tokens.
+- [x] Update `PostList` layout.
+- [x] Redesign `ChannelList` into a Grid view.
 
 ### Phase 3: Polish
 
-- [ ] Add `framer-motion` for transitions (entering feed, opening modals).
-- [ ] Add toast animations.
+- [x] Add `framer-motion` for transitions (entering feed, opening modals).
+- [x] Add toast animations.
 
 ---
 

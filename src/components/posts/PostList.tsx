@@ -9,6 +9,7 @@ import { getDateYYYYMMDDWithDash } from '@/utils/utils';
 import { useCallback } from 'react';
 import useInfiniteScroll from '@/hooks/useInfiniteScroll';
 import NewPostsBanner from '@/components/posts/NewPostsBanner';
+import { motion } from 'framer-motion';
 
 interface IntersectAreaProps {
   onIntersect: () => void;
@@ -29,6 +30,21 @@ const IntersectArea = ({
       {isLoading && <GridSpinner color={LOADING_BAR_COLOR} />}
     </div>
   );
+};
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
 };
 
 const PostList = ({ channelId }: { channelId: string }) => {
@@ -65,7 +81,12 @@ const PostList = ({ channelId }: { channelId: string }) => {
         count={newPostsCount}
         onRefresh={handleRefresh}
       />
-      <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-6 pb-32 bg-surface-page bg-opacity-50">
+      <motion.ul
+        className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-6 pb-32 bg-surface-page bg-opacity-50"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
         {isLoading ? (
           <div className="w-full flex flex-col items-center mt-4">
             {/* Show 3 skeletons */}
@@ -76,8 +97,9 @@ const PostList = ({ channelId }: { channelId: string }) => {
         ) : posts != null && posts.length > 0 ? (
           <>
             {posts.map((post, idx) => (
-              <li
+              <motion.li
                 key={post.id}
+                variants={item}
                 className="w-full flex justify-center"
               >
                 <PostCard
@@ -87,7 +109,7 @@ const PostList = ({ channelId }: { channelId: string }) => {
                   addCommentOnPost={addCommentOnPost}
                   toggleReactionOnPost={toggleReactionOnPost}
                 />
-              </li>
+              </motion.li>
             ))}
             <IntersectArea
               onIntersect={handleIntersect}
@@ -95,7 +117,10 @@ const PostList = ({ channelId }: { channelId: string }) => {
             />
           </>
         ) : (
-          <div className="w-full flex flex-col items-center justify-center mt-32 text-center">
+          <motion.div
+            variants={item}
+            className="w-full flex flex-col items-center justify-center mt-32 text-center"
+          >
             <div className="text-6xl mb-4">📭</div>
             <h3 className="text-xl font-semibold text-text-primary mb-2">
               아직 게시글이 없어요
@@ -105,9 +130,9 @@ const PostList = ({ channelId }: { channelId: string }) => {
                 '해당 일자에 게시글이 없습니다.\n가장 먼저 이야기를 들려주세요! 🙂'
               }
             </p>
-          </div>
+          </motion.div>
         )}
-      </ul>
+      </motion.ul>
     </>
   );
 };

@@ -61,7 +61,7 @@ export default function usePosts(channelId: string, date?: string) {
 
   const posts = postPages ? postPages.flat() : [];
 
-  const { mutate: globalMutate } = useSWRConfig();
+  const { mutate: globalMutate, cache } = useSWRConfig();
 
   const { mutate: addPostMutation, isLoading: isAddingPost } = useToastMutation(
     async ({ text, file }: { text: string; file?: File }) => {
@@ -305,7 +305,7 @@ export default function usePosts(channelId: string, date?: string) {
         userId,
       });
 
-      if (!postId || !postPages) return;
+      if (!postId) return;
 
       // 내 액션은 이미 Optimistic Update로 처리되었을 수 있음 -> 중복 처리 방지
       // (단, 다른 기기에서의 내 액션은 처리해야 함... 여기서는 currentUser check 사용)
@@ -314,21 +314,25 @@ export default function usePosts(channelId: string, date?: string) {
         return;
       }
 
-      if (type === 'DELETE' && !emoji) {
-        // emoji를 모르면 전체 갱신 (fallback)
-        console.log('[usePosts] DELETE인데 emoji 정보 없어서 전체 갱신');
-        mutate(undefined, { revalidate: true });
-        return;
-      }
+      // Debug: 캐시 키 전체 출력
+      console.log(
+        '🔍 [Debug] Current SWR Cache Keys:',
+        Array.from(cache.keys()),
+      );
 
       mutate(
         (currentPages) => {
-          if (!currentPages) return currentPages;
+          if (!currentPages) {
+            return currentPages;
+          }
+
+          let isUpdated = false;
 
           const updatedPages = currentPages.map((page) =>
             page.map((post) => {
               if (post.id === postId) {
-                // 이 안쪽 로직은 그대로 사용하되, post는 currentPages의 최신 상태임.
+                isUpdated = true;
+
                 const existingReaction = post.reactions.find(
                   (r) => r.emoji === emoji,
                 );
@@ -336,24 +340,43 @@ export default function usePosts(channelId: string, date?: string) {
 
                 if (type === 'INSERT') {
                   if (existingReaction) {
-                    newReactions = newReactions.map((r) =>
-                      r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
-                    );
+                    newReactions = newReactions.map((r) => {
+                      if (r.emoji === emoji) {
+                        const updatedList = r.reactionUserIdList
+                          ? [...r.reactionUserIdList, userId!]
+                          : [userId!];
+                        return {
+                          ...r,
+                          count: r.count + 1,
+                          reactionUserIdList: updatedList,
+                        };
+                      }
+                      return r;
+                    });
                   } else {
                     newReactions.push({
                       emoji: emoji!,
                       count: 1,
                       reactedByMe: false,
+                      reactionUserIdList: [userId!],
                     });
                   }
                 } else if (type === 'DELETE') {
                   if (existingReaction) {
                     newReactions = newReactions
-                      .map((r) =>
-                        r.emoji === emoji
-                          ? { ...r, count: Math.max(0, r.count - 1) }
-                          : r,
-                      )
+                      .map((r) => {
+                        if (r.emoji === emoji) {
+                          const updatedList = r.reactionUserIdList
+                            ? r.reactionUserIdList.filter((id) => id !== userId)
+                            : [];
+                          return {
+                            ...r,
+                            count: Math.max(0, r.count - 1),
+                            reactionUserIdList: updatedList,
+                          };
+                        }
+                        return r;
+                      })
                       .filter((r) => r.count > 0);
                   }
                 }
@@ -366,12 +389,13 @@ export default function usePosts(channelId: string, date?: string) {
               return post;
             }),
           );
+
           return updatedPages;
         },
         { revalidate: false },
       );
     },
-    [mutate, user?.userId], // postPages 의존성 제거 (functional update 사용)
+    [mutate, user?.userId],
   );
 
   const handleCommentInsert = useCallback(

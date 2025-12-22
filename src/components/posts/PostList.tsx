@@ -34,25 +34,15 @@ const PostList = ({ channelId }: { channelId: string }) => {
   const date =
     useSearchParams().get('date') ||
     getDateYYYYMMDDWithDash().replaceAll('-', '');
-
-  console.log('[PostList] 렌더링됨:', { channelId, date });
-
   const {
     posts,
     isLoading,
     addCommentOnPost,
-    toggleReactionOnPost,
     setSize,
     isLoadingMore,
     newPostsCount,
     handleRefresh,
   } = usePosts(channelId, date);
-
-  console.log('[PostList] usePosts 결과:', {
-    postsCount: posts?.length,
-    newPostsCount,
-    isLoading,
-  });
 
   const handleIntersect = useCallback(() => {
     setSize((prev) => prev + 1);
@@ -60,46 +50,40 @@ const PostList = ({ channelId }: { channelId: string }) => {
 
   return (
     <>
-      <NewPostsBanner
-        count={newPostsCount}
-        onRefresh={handleRefresh}
-      />
+      <NewPostsBanner count={newPostsCount} onRefresh={handleRefresh} />
       <ul className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-10 pb-32">
-        {isLoading ? (
-          <div className="w-full flex justify-center mt-32">
-            <GridSpinner color={LOADING_BAR_COLOR} />
-          </div>
-        ) : posts != null && posts.length > 0 ? (
-          <>
-            {posts.map((post, idx) => (
-              <li
+      {isLoading ? (
+        <div className="w-full flex justify-center mt-32">
+          <GridSpinner color={LOADING_BAR_COLOR} />
+        </div>
+      ) : posts != null && posts.length > 0 ? (
+        <>
+          {posts.map((post, idx) => (
+            <li
+              key={post.id}
+              className="w-full flex justify-center"
+            >
+              <PostCard
                 key={post.id}
-                className="w-full flex justify-center"
-              >
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  priority={idx < 2}
-                  addCommentOnPost={addCommentOnPost}
-                  toggleReactionOnPost={toggleReactionOnPost}
-                />
-              </li>
-            ))}
-            <IntersectArea
-              onIntersect={handleIntersect}
-              isLoading={isLoadingMore}
-            />
-          </>
-        ) : (
-          <div className="w-full flex justify-center mt-32">
-            <p className="text-gray-500 whitespace-pre-line">
-              {
-                '해당 일자에 게시글이 없습니다.\n\n먼저 게시글을 등록해보세요 🙂'
-              }
-            </p>
-          </div>
-        )}
-      </ul>
+                post={post}
+                priority={idx < 2}
+                addCommentOnPost={addCommentOnPost}
+              />
+            </li>
+          ))}
+          <IntersectArea
+            onIntersect={handleIntersect}
+            isLoading={isLoadingMore}
+          />
+        </>
+      ) : (
+        <div className="w-full flex justify-center mt-32">
+          <p className="text-gray-500 whitespace-pre-line">
+            {'해당 일자에 게시글이 없습니다.\n\n먼저 게시글을 등록해보세요 🙂'}
+          </p>
+        </div>
+      )}
+    </ul>
     </>
   );
 };

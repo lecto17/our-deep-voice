@@ -45,18 +45,7 @@ export interface RealtimePayload<T> {
   errors: null | string[];
 }
 
-// 댓글 공감 테이블 레코드
-export interface CommentReactionRecord {
-  id: string;
-  comment_id: string;
-  user_id: string;
-  emoji: string;
-  created_at: string;
-}
-
 // 각 테이블별 페이로드 타입
 export type PostRealtimePayload = RealtimePayload<PostRecord>;
 export type PostReactionRealtimePayload = RealtimePayload<PostReactionRecord>;
 export type CommentRealtimePayload = RealtimePayload<CommentRecord>;
-export type CommentReactionRealtimePayload =
-  RealtimePayload<CommentReactionRecord>;

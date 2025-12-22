@@ -7,7 +7,6 @@ export const getPosts = async (
   channelId: string,
   page: number,
   limit: number,
-  userId?: string,
 ) => {
   const client = await serverSupabase();
 
@@ -23,66 +22,6 @@ export const getPosts = async (
 
   if (error) throw error;
 
-  // userId가 있는 경우, 해당 유저의 리액션 정보를 별도로 조회하여 병합
-  if (userId && posts.length > 0) {
-    const postIds = posts.map((p) => p.id);
-    const { data: myReactions } = await client
-      .from('post_reactions')
-      .select('post_id, emoji')
-      .eq('user_id', userId)
-      .in('post_id', postIds);
-
-    if (myReactions && myReactions.length > 0) {
-      posts.forEach((post) => {
-        // 내 리액션 찾기
-        const myPostReactions = myReactions.filter(
-          (r) => r.post_id === post.id,
-        );
-
-        myPostReactions.forEach((myReaction) => {
-          // reactions 배열 확인 (JSONB 컬럼)
-          if (Array.isArray(post.reactions)) {
-            const existingReaction = post.reactions.find(
-              (r: {
-                emoji: string;
-                count: number;
-                reaction_user_id_list: string[];
-              }) => r.emoji === myReaction.emoji,
-            );
-
-            if (existingReaction) {
-              // 이미 해당 이모지 리액션 그룹이 있다면, user_id_list에 내 ID 추가
-              // (API에서 reactedByMe 계산 시 사용됨)
-              if (
-                Array.isArray(existingReaction.reaction_user_id_list) &&
-                !existingReaction.reaction_user_id_list.includes(userId)
-              ) {
-                existingReaction.reaction_user_id_list.push(userId);
-              } else if (!existingReaction.reaction_user_id_list) {
-                existingReaction.reaction_user_id_list = [userId];
-              }
-            } else {
-              // 리액션 그룹이 없다면 새로 추가 (드문 경우)
-              post.reactions.push({
-                emoji: myReaction.emoji,
-                count: 1,
-                reaction_user_id_list: [userId],
-              });
-            }
-          } else if (!post.reactions) {
-            post.reactions = [
-              {
-                emoji: myReaction.emoji,
-                count: 1,
-                reaction_user_id_list: [userId],
-              },
-            ];
-          }
-        });
-      });
-    }
-  }
-
   const postsWithCommentCount = await Promise.all(
     posts.map(async (post) => {
       const { data: comments } = await client
@@ -95,6 +34,19 @@ export const getPosts = async (
     }),
   );
 
+  // const postsWithComments = await Promise.all(
+  //   posts.map(async (post) => {
+  //     const { data: comments } = await client
+  //       .from('comments')
+  //       .select(
+  //         `
+  //           id, post_id, author_id, body, created_at
+  //         `,
+  //       )
+  //       .eq('post_id', post.id)
+  //       .eq('is_deleted', false)
+  //       .order('created_at', { ascending: false });
+  //     const _transfored = comments?.map(objectMapper) || [];
   //     return { ...post, comments: _transfored };
   //   }),
   // );
@@ -166,10 +118,6 @@ export const addReactionOnPost = async (
   emoji: string,
 ) => {
   const client = await serverSupabase();
-  const {
-    data: { user: authUser },
-  } = await client.auth.getUser();
-
   const { error } = await client.from('post_reactions').insert({
     post_id: postId,
     user_id: userId,

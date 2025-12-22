@@ -15,12 +15,7 @@
       "Bash(pnpm update:*)",
       "Bash(find:*)",
       "Bash(git diff:*)",
-      "Bash(git checkout:*)",
-      "Bash(pnpm install:*)",
-      "Bash(echo:*)",
-      "Bash(npx tsc --noEmit)",
-      "Bash(ipconfig:*)",
-      "Bash(findstr:*)"
+      "Bash(git checkout:*)"
     ]
   }
 }

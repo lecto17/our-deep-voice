@@ -1,11 +1,8 @@
 export type SupaUserProfile = {
   avatarUrl: string | null;
   createdAt?: string;
-  userId?: string;
+  id?: string;
   userName: string;
-  channelId?: string;
-  role?: string;
-  joinedAt?: string;
 };
 
 export type OnboardingUserProfile = {

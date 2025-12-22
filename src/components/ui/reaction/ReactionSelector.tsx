@@ -2,6 +2,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useRef, useState } from 'react';
 import { VscReactions } from 'react-icons/vsc';
 import { REACTION_BAR_ITEMS } from '@/types/reaction';
+import { motion } from 'framer-motion';
 
 type ReactionSelectorProps = {
   onReactionClick: (postId: string, reaction: string) => void;
@@ -42,13 +43,16 @@ const ReactionSelector = ({
         }`}
       >
         {REACTION_BAR_ITEMS.map((item) => (
-          <li
+          <motion.li
             key={item.id}
             className="text-lg p-1 cursor-pointer hover:bg-gray-100 rounded-md"
             onClick={() => handleReaction(item.icon)}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           >
             {item.icon}
-          </li>
+          </motion.li>
         ))}
       </ul>
     </div>

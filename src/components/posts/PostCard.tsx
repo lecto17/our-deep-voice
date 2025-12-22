@@ -121,7 +121,7 @@ const PostCard = ({
         </p>
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-surface-subtle">
+      <div className="flex items-center justify-between pt-4 mt-2 border-t border-surface-subtle bg-surface-subtle/30 -mx-6 px-6 py-3 rounded-b-3xl">
         <div className="flex items-center gap-2">
           <ReactionSelector
             onReactionClick={toggleReactionOnPost}

@@ -11,7 +11,7 @@ export type SupaPost = {
   createdAt: string;
   updatedAt: string | null;
   commentCount: number;
-  author: Pick<SupaUserProfile, 'avatarUrl' | 'userName' | 'id'>;
+  author: Pick<SupaUserProfile, 'avatarUrl' | 'userName' | 'userId'>;
   reactions: TransformedReactionStats[];
 };
 

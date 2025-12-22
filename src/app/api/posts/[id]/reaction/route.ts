@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
         reactedByMe: el.map((el) => el.user_id).includes(user.id),
       }),
     )
-    .catch((err) => new Response(JSON.stringify(err), { status: 500 }));
-  // .catch((err) => console.log(err));
+    .catch((err) => {
+      console.error('[API] Failed to add reaction:', err);
+      return new Response(JSON.stringify(err), { status: 500 });
+    });
 }

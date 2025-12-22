@@ -1,4 +1,5 @@
 import { useCacheKeyContext } from '@/context/CacheKeyContext';
+import { toast } from 'sonner';
 import { SupaComment, SupaPost } from '@/types/post';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
 import { useCallback, useState } from 'react';
@@ -12,7 +13,12 @@ import {
   RealtimePostgresInsertPayload,
   RealtimePostgresDeletePayload,
 } from '@supabase/supabase-js';
-import { PostRecord, PostReactionRecord, CommentRecord } from '@/types/realtime';
+import {
+  PostRecord,
+  PostReactionRecord,
+  CommentRecord,
+  CommentReactionRecord,
+} from '@/types/realtime';
 
 export default function usePosts(channelId: string, date?: string) {
   const { postsKey } = useCacheKeyContext();
@@ -27,7 +33,6 @@ export default function usePosts(channelId: string, date?: string) {
 
   // 오늘 날짜인지 확인 (실시간 구독은 오늘만 활성화)
   const isToday = !date || date === today;
-
   const getKey = (pageIndex: number, previousPageData: SupaPost[]) => {
     if (previousPageData && !previousPageData.length) return null; // reached the end
     return `${key}&page=${pageIndex}&limit=10`; // SWR key
@@ -51,12 +56,9 @@ export default function usePosts(channelId: string, date?: string) {
 
   const posts = postPages ? postPages.flat() : [];
 
-  const { mutate: globalMutate } = useSWRConfig();
+  const { mutate: globalMutate, cache } = useSWRConfig();
 
-  const {
-    mutate: addPostMutation,
-    isLoading: isAddingPost,
-  } = useToastMutation(
+  const { mutate: addPostMutation, isLoading: isAddingPost } = useToastMutation(
     async ({ text, file }: { text: string; file?: File }) => {
       const formData = new FormData();
       formData.append('text', text);
@@ -81,7 +83,7 @@ export default function usePosts(channelId: string, date?: string) {
       onSuccess: () => {
         mutate(undefined, { revalidate: true });
       },
-    }
+    },
   );
 
   const addPost = (text: string, file?: File) => {
@@ -242,6 +244,7 @@ export default function usePosts(channelId: string, date?: string) {
   const handlePostInsert = useCallback(() => {
     // 새 게시글이 추가되면 카운트 증가
     setNewPostsCount((prev) => prev + 1);
+    toast.info('다른 사용자가 새 글을 남겼어요!');
   }, []);
 
   const handlePostDelete = useCallback(
@@ -262,45 +265,160 @@ export default function usePosts(channelId: string, date?: string) {
         | RealtimePostgresInsertPayload<PostReactionRecord>
         | RealtimePostgresDeletePayload<PostReactionRecord>,
     ) => {
-      // 공감 변경 시 해당 게시글만 revalidate
       let postId: string | null = null;
+      let emoji: string | null = null;
+      let type: 'INSERT' | 'DELETE' | null = null;
+      let userId: string | null = null;
 
       if (payload.eventType === 'INSERT') {
-        const insertPayload = payload as RealtimePostgresInsertPayload<PostReactionRecord>;
+        const insertPayload =
+          payload as RealtimePostgresInsertPayload<PostReactionRecord>;
         postId = insertPayload.new.post_id;
+        emoji = insertPayload.new.emoji;
+        userId = insertPayload.new.user_id;
+        type = 'INSERT';
       } else if (payload.eventType === 'DELETE') {
-        const deletePayload = payload as RealtimePostgresDeletePayload<PostReactionRecord>;
-        postId = deletePayload.old.post_id ?? null;
+        const deletePayload =
+          payload as RealtimePostgresDeletePayload<PostReactionRecord>;
+        postId = deletePayload.old.post_id ?? null; // old에 post_id가 없을 수도 있음 (설정에 따라)
+        // 주의: REPLICA IDENTITY FULL이 아니면 old에 emoji가 없을 수 있음.
+        // 현재 로직에서는 emoji를 모르면 카운트를 줄일 수 없음.
+        if ('emoji' in deletePayload.old) {
+          emoji = (deletePayload.old as PostReactionRecord).emoji;
+        }
+        userId = deletePayload.old.user_id ?? null;
+        type = 'DELETE';
       }
 
-      if (postId) {
-        // 전체 페이지를 revalidate하여 최신 데이터 가져오기
-        mutate(undefined, { revalidate: true });
+      if (!postId) return;
+
+      // 내 액션은 이미 Optimistic Update로 처리되었을 수 있음 -> 중복 처리 방지
+      // (단, 다른 기기에서의 내 액션은 처리해야 함... 여기서는 currentUser check 사용)
+      if (user?.userId && userId === user.userId) {
+        return;
       }
+
+      mutate(
+        (currentPages) => {
+          if (!currentPages) {
+            return currentPages;
+          }
+
+          let isUpdated = false;
+
+          const updatedPages = currentPages.map((page) =>
+            page.map((post) => {
+              if (post.id === postId) {
+                isUpdated = true;
+
+                const existingReaction = post.reactions.find(
+                  (r) => r.emoji === emoji,
+                );
+                let newReactions = [...post.reactions];
+
+                if (type === 'INSERT') {
+                  if (existingReaction) {
+                    newReactions = newReactions.map((r) => {
+                      if (r.emoji === emoji) {
+                        const updatedList = r.reactionUserIdList
+                          ? [...r.reactionUserIdList, userId!]
+                          : [userId!];
+                        return {
+                          ...r,
+                          count: r.count + 1,
+                          reactionUserIdList: updatedList,
+                          reactedByMe:
+                            user?.userId === userId ? true : r.reactedByMe,
+                        };
+                      }
+                      return r;
+                    });
+                  } else {
+                    newReactions.push({
+                      emoji: emoji!,
+                      count: 1,
+                      reactedByMe: user?.userId === userId,
+                      reactionUserIdList: [userId!],
+                    });
+                  }
+                } else if (type === 'DELETE') {
+                  if (existingReaction) {
+                    newReactions = newReactions
+                      .map((r) => {
+                        if (r.emoji === emoji) {
+                          const updatedList = r.reactionUserIdList
+                            ? r.reactionUserIdList.filter((id) => id !== userId)
+                            : [];
+                          return {
+                            ...r,
+                            count: Math.max(0, r.count - 1),
+                            reactionUserIdList: updatedList,
+                            reactedByMe:
+                              user?.userId === userId ? false : r.reactedByMe,
+                          };
+                        }
+                        return r;
+                      })
+                      .filter((r) => r.count > 0);
+                  }
+                }
+
+                return {
+                  ...post,
+                  reactions: newReactions,
+                };
+              }
+              return post;
+            }),
+          );
+
+          return updatedPages;
+        },
+        { revalidate: false },
+      );
     },
-    [mutate],
+    [mutate, user?.userId],
   );
 
   const handleCommentInsert = useCallback(
     (payload: RealtimePostgresInsertPayload<CommentRecord>) => {
       // 댓글 추가 시 해당 게시글의 댓글 카운트 증가
       const postId = payload.new.post_id;
-      const updatedPages = postPages?.map((page) =>
-        page.map((post) =>
-          post.id === postId
-            ? { ...post, commentCount: post.commentCount + 1 }
-            : post,
-        ),
+      const authorId = payload.new.author_id;
+
+      if (user?.userId && authorId === user.userId) {
+        return;
+      }
+
+      mutate(
+        (currentPages) => {
+          if (!currentPages) return currentPages;
+          return currentPages.map((page) =>
+            page.map((post) =>
+              post.id === postId
+                ? { ...post, commentCount: post.commentCount + 1 }
+                : post,
+            ),
+          );
+        },
+        { revalidate: false },
       );
-      mutate(updatedPages, { revalidate: false });
+
+      // 게시글 상세 조회(댓글 목록 등) 캐시 무효화 -> 상세 진입 시 최신 댓글 보이게
+      globalMutate(
+        (key) =>
+          typeof key === 'string' && key.includes(`/api/posts/${postId}`),
+        undefined,
+        { revalidate: true },
+      );
     },
-    [postPages, mutate],
+    [mutate, globalMutate, user?.userId], // postPages 의존성 제거
   );
 
   // 실시간 구독 활성화 (오늘 날짜일 때만)
   useRealtimeSubscription({
     channelId,
-    currentUserId: user?.id,
+    currentUserId: user?.userId,
     enabled: isToday,
     onPostInsert: handlePostInsert,
     onPostDelete: handlePostDelete,

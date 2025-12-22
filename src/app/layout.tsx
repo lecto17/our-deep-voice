@@ -1,13 +1,7 @@
 import type { Metadata } from 'next';
-import { Open_Sans } from 'next/font/google';
 import './globals.css';
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
-
-const openSans = Open_Sans({
-  variable: '--font-open-sans',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -107,9 +101,12 @@ export default async function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={`${openSans.className} w-full h-full bg-neutral-50`}>
+      <body className={`w-full h-full bg-surface-page text-text-primary`}>
         {children}
-        <Toaster position="top-center" richColors />
+        <Toaster
+          position="top-center"
+          richColors
+        />
       </body>
     </html>
   );

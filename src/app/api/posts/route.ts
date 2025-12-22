@@ -43,7 +43,8 @@ export async function GET(request: NextRequest) {
           }) => {
             const list =
               reaction.reactionUserIdList ||
-              (reaction as any).reaction_user_id_list ||
+              (reaction as unknown as { reaction_user_id_list: string[] })
+                .reaction_user_id_list ||
               [];
             // console.log('[API] Reaction check:', {
             //   emoji: reaction.emoji,

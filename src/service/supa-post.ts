@@ -43,7 +43,11 @@ export const getPosts = async (
           // reactions 배열 확인 (JSONB 컬럼)
           if (Array.isArray(post.reactions)) {
             const existingReaction = post.reactions.find(
-              (r: any) => r.emoji === myReaction.emoji,
+              (r: {
+                emoji: string;
+                count: number;
+                reaction_user_id_list: string[];
+              }) => r.emoji === myReaction.emoji,
             );
 
             if (existingReaction) {

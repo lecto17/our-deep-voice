@@ -79,7 +79,7 @@ const NewPost = ({ channelId }: { channelId: string }) => {
               {userProfile ? (
                 <Avatar user={userProfile} />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
+                <div className="w-9 h-9 rounded-full bg-surface-subtle animate-pulse" />
               )}
               <div className="ml-3 min-w-0">
                 <p className="text-sm font-semibold text-neutral-800 truncate dark:text-neutral-100">

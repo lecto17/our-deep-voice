@@ -20,7 +20,10 @@
       "Bash(echo:*)",
       "Bash(npx tsc --noEmit)",
       "Bash(ipconfig:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)"
     ]
   }
 }

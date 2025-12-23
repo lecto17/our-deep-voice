@@ -24,7 +24,7 @@ export default function NewPostsBanner({
       >
         <button
           onClick={onRefresh}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2 transition-all duration-200 hover:scale-105"
+          className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2 transition-all duration-200 hover:scale-105"
         >
           <svg
             className="w-5 h-5"

@@ -53,7 +53,7 @@ const GlobalNav = ({
     setActiveDropdown(null);
     await createClient().auth.signOut();
     // 로그아웃 후 페이지 새로고침하여 서버 상태 동기화
-    window.location.href = `${prefixUrl}/auth/login`;
+    window.location.href = `/auth/login`;
   };
 
   const getDropdownMenu = (type: 'post' | 'profile') => {

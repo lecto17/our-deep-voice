@@ -51,15 +51,25 @@ const PostList = ({ channelId }: { channelId: string }) => {
   const date =
     useSearchParams().get('date') ||
     getDateYYYYMMDDWithDash().replaceAll('-', '');
+
+  console.log('[PostList] 렌더링됨:', { channelId, date });
+
   const {
     posts,
     isLoading,
     addCommentOnPost,
+    toggleReactionOnPost,
     setSize,
     isLoadingMore,
     newPostsCount,
     handleRefresh,
   } = usePosts(channelId, date);
+
+  console.log('[PostList] usePosts 결과:', {
+    postsCount: posts?.length,
+    newPostsCount,
+    isLoading,
+  });
 
   const handleIntersect = useCallback(() => {
     setSize((prev) => prev + 1);

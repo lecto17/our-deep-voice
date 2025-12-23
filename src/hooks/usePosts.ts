@@ -12,7 +12,11 @@ import {
   RealtimePostgresInsertPayload,
   RealtimePostgresDeletePayload,
 } from '@supabase/supabase-js';
-import { PostRecord, PostReactionRecord, CommentRecord } from '@/types/realtime';
+import {
+  PostRecord,
+  PostReactionRecord,
+  CommentRecord,
+} from '@/types/realtime';
 
 export default function usePosts(channelId: string, date?: string) {
   const { postsKey } = useCacheKeyContext();
@@ -53,10 +57,7 @@ export default function usePosts(channelId: string, date?: string) {
 
   const { mutate: globalMutate } = useSWRConfig();
 
-  const {
-    mutate: addPostMutation,
-    isLoading: isAddingPost,
-  } = useToastMutation(
+  const { mutate: addPostMutation, isLoading: isAddingPost } = useToastMutation(
     async ({ text, file }: { text: string; file?: File }) => {
       const formData = new FormData();
       formData.append('text', text);
@@ -81,7 +82,7 @@ export default function usePosts(channelId: string, date?: string) {
       onSuccess: () => {
         mutate(undefined, { revalidate: true });
       },
-    }
+    },
   );
 
   const addPost = (text: string, file?: File) => {
@@ -266,35 +267,108 @@ export default function usePosts(channelId: string, date?: string) {
       let postId: string | null = null;
 
       if (payload.eventType === 'INSERT') {
-        const insertPayload = payload as RealtimePostgresInsertPayload<PostReactionRecord>;
+        const insertPayload =
+          payload as RealtimePostgresInsertPayload<PostReactionRecord>;
         postId = insertPayload.new.post_id;
       } else if (payload.eventType === 'DELETE') {
-        const deletePayload = payload as RealtimePostgresDeletePayload<PostReactionRecord>;
+        const deletePayload =
+          payload as RealtimePostgresDeletePayload<PostReactionRecord>;
         postId = deletePayload.old.post_id ?? null;
       }
 
       if (postId) {
         // 전체 페이지를 revalidate하여 최신 데이터 가져오기
         mutate(undefined, { revalidate: true });
+        return;
       }
+
+      mutate(
+        (currentPages) => {
+          if (!currentPages) return currentPages;
+
+          const updatedPages = currentPages.map((page) =>
+            page.map((post) => {
+              if (post.id === postId) {
+                // 이 안쪽 로직은 그대로 사용하되, post는 currentPages의 최신 상태임.
+                const existingReaction = post.reactions.find(
+                  (r) => r.emoji === emoji,
+                );
+                let newReactions = [...post.reactions];
+
+                if (type === 'INSERT') {
+                  if (existingReaction) {
+                    newReactions = newReactions.map((r) =>
+                      r.emoji === emoji ? { ...r, count: r.count + 1 } : r,
+                    );
+                  } else {
+                    newReactions.push({
+                      emoji: emoji!,
+                      count: 1,
+                      reactedByMe: false,
+                    });
+                  }
+                } else if (type === 'DELETE') {
+                  if (existingReaction) {
+                    newReactions = newReactions
+                      .map((r) =>
+                        r.emoji === emoji
+                          ? { ...r, count: Math.max(0, r.count - 1) }
+                          : r,
+                      )
+                      .filter((r) => r.count > 0);
+                  }
+                }
+
+                return {
+                  ...post,
+                  reactions: newReactions,
+                };
+              }
+              return post;
+            }),
+          );
+          return updatedPages;
+        },
+        { revalidate: false },
+      );
     },
-    [mutate],
+    [mutate, user?.userId], // postPages 의존성 제거 (functional update 사용)
   );
 
   const handleCommentInsert = useCallback(
     (payload: RealtimePostgresInsertPayload<CommentRecord>) => {
       // 댓글 추가 시 해당 게시글의 댓글 카운트 증가
       const postId = payload.new.post_id;
-      const updatedPages = postPages?.map((page) =>
-        page.map((post) =>
-          post.id === postId
-            ? { ...post, commentCount: post.commentCount + 1 }
-            : post,
-        ),
+      const authorId = payload.new.author_id;
+
+      if (user?.userId && authorId === user.userId) {
+        console.log('[usePosts] 내 댓글이므로 무시 (Optimistic Update 가정)');
+        return;
+      }
+
+      mutate(
+        (currentPages) => {
+          if (!currentPages) return currentPages;
+          return currentPages.map((page) =>
+            page.map((post) =>
+              post.id === postId
+                ? { ...post, commentCount: post.commentCount + 1 }
+                : post,
+            ),
+          );
+        },
+        { revalidate: false },
       );
-      mutate(updatedPages, { revalidate: false });
+
+      // 게시글 상세 조회(댓글 목록 등) 캐시 무효화 -> 상세 진입 시 최신 댓글 보이게
+      globalMutate(
+        (key) =>
+          typeof key === 'string' && key.includes(`/api/posts/${postId}`),
+        undefined,
+        { revalidate: true },
+      );
     },
-    [postPages, mutate],
+    [mutate, globalMutate, user?.userId], // postPages 의존성 제거
   );
 
   // 실시간 구독 활성화 (오늘 날짜일 때만)

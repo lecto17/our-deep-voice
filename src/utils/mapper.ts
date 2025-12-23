@@ -23,19 +23,7 @@ const transformKeys = (
 
   for (const [key, value] of Object.entries(obj)) {
     const pascalKey = snakeToCamel(key);
-    if (Array.isArray(value)) {
-      transformed[pascalKey] = value.map((v) => {
-        if (
-          v &&
-          typeof v === 'object' &&
-          !Array.isArray(v) &&
-          !(v instanceof Date)
-        ) {
-          return transformKeys(v as Record<string, unknown>);
-        }
-        return v;
-      });
-    } else if (
+    if (
       value &&
       typeof value === 'object' &&
       !Array.isArray(value) &&

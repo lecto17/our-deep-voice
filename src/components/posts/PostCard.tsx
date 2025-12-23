@@ -16,6 +16,7 @@ register('ko', ko);
 
 import ReactionSelector from '../ui/reaction/ReactionSelector';
 import ReactionList from '../ui/reaction/ReactionList';
+import usePosts from '@/hooks/usePosts';
 import { useParams, useSearchParams } from 'next/navigation';
 import useComment from '@/hooks/useComment';
 import CommentBottomSheet from '../comment/CommentBottomSheet';
@@ -26,21 +27,17 @@ interface PostCardProps {
   post: SupaPost;
   priority?: boolean;
   addCommentOnPost: (comment: SupaComment, postId: string) => void;
-  toggleReactionOnPost: (postId: string, emoji: string) => void;
 }
 
 const location = 'Incheon, Korea';
 
-const PostCard = ({
-  post,
-  priority,
-  addCommentOnPost,
-  toggleReactionOnPost,
-}: PostCardProps) => {
+const PostCard = ({ post, priority, addCommentOnPost }: PostCardProps) => {
   const [showable, setShowable] = useState(false);
   const pathParams = useSearchParams();
   const date = pathParams.get('date');
   const { channelId } = useParams();
+
+  const { toggleReactionOnPost } = usePosts(channelId as string, date || '');
 
   const {
     comments,

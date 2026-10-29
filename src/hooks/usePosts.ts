@@ -20,7 +20,11 @@ import {
   CommentReactionRecord,
 } from '@/types/realtime';
 
-export default function usePosts(channelId: string, date?: string) {
+export default function usePosts(
+  channelId: string,
+  date?: string,
+  initialPosts?: SupaPost[],
+) {
   const { postsKey } = useCacheKeyContext();
   const today = getDateYYYYMMDDWithDash().replaceAll('-', '');
   const key = `${postsKey}?channelId=${channelId}&date=${date || today}`;
@@ -51,6 +55,8 @@ export default function usePosts(channelId: string, date?: string) {
     (url) => fetch(url).then((res) => res.json()),
     {
       revalidateFirstPage: false,
+      // 서버에서 받은 첫 페이지를 초기 데이터로 쓴다
+      fallbackData: initialPosts && [initialPosts],
     },
   );
 

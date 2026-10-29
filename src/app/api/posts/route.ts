@@ -1,6 +1,6 @@
 // import { validateSession } from '@/actions/action';
 import { getAuthenticatedUser } from '@/actions/action';
-import { getPosts } from '@/service/supa-post';
+import { getFeedPosts } from '@/service/supa-post';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
 import { NextRequest } from 'next/server';
 
@@ -26,41 +26,13 @@ export async function GET(request: NextRequest) {
 
   if (!channelId) return new Response('channelId is required', { status: 400 });
 
-  const data = await getPosts(date, channelId, page, limit, user.id);
-  const formattedData = data.map((post) => {
-    // console.log('[API] Post data check:', {
-    //   id: post.id,
-    //   reactions: post.reactions,
-    // });
-    return {
-      ...post,
-      reactions:
-        post.reactions?.map(
-          (reaction: {
-            emoji: string;
-            count: number;
-            reactionUserIdList: string[];
-          }) => {
-            const list =
-              reaction.reactionUserIdList ||
-              (reaction as unknown as { reaction_user_id_list: string[] })
-                .reaction_user_id_list ||
-              [];
-            // console.log('[API] Reaction check:', {
-            //   emoji: reaction.emoji,
-            //   listLength: list?.length,
-            //   firstItem: list?.[0],
-            //   userId: user.id
-            // });
-            return {
-              emoji: reaction.emoji,
-              count: reaction.count,
-              reactedByMe: Array.isArray(list) ? list.includes(user.id) : false,
-            };
-          },
-        ) || [],
-    };
-  });
+  const formattedData = await getFeedPosts(
+    date,
+    channelId,
+    page,
+    limit,
+    user.id,
+  );
 
   return new Response(JSON.stringify(formattedData), { status: 200 });
 }

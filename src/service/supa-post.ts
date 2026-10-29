@@ -103,6 +103,40 @@ export const getPosts = async (
   return transformedData as RawSupaPost[];
 };
 
+// 피드 응답 형태로 게시글 조회 (/api/posts와 채널 홈 SSR이 함께 사용)
+// 리액션 사용자 목록 대신 내가 반응했는지(reactedByMe)만 내려준다
+export const getFeedPosts = async (
+  date: string,
+  channelId: string,
+  page: number,
+  limit: number,
+  userId: string,
+): Promise<SupaPost[]> => {
+  const data = await getPosts(date, channelId, page, limit, userId);
+  return data.map((post) => ({
+    ...post,
+    reactions:
+      post.reactions?.map(
+        (reaction: {
+          emoji: string;
+          count: number;
+          reactionUserIdList: string[];
+        }) => {
+          const list =
+            reaction.reactionUserIdList ||
+            (reaction as unknown as { reaction_user_id_list: string[] })
+              .reaction_user_id_list ||
+            [];
+          return {
+            emoji: reaction.emoji,
+            count: reaction.count,
+            reactedByMe: Array.isArray(list) ? list.includes(userId) : false,
+          };
+        },
+      ) || [],
+  }));
+};
+
 export const getPostComments = async (id: string, channelId?: string) => {
   const client = await serverSupabase();
   const { data, error } = await client

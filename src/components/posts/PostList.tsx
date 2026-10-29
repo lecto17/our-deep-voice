@@ -10,6 +10,7 @@ import { useCallback } from 'react';
 import useInfiniteScroll from '@/hooks/useInfiniteScroll';
 import NewPostsBanner from '@/components/posts/NewPostsBanner';
 import { motion } from 'framer-motion';
+import { SupaPost } from '@/types/post';
 
 interface IntersectAreaProps {
   onIntersect: () => void;
@@ -47,7 +48,13 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-const PostList = ({ channelId }: { channelId: string }) => {
+type Props = {
+  channelId: string;
+  // 서버에서 조회한 첫 페이지 (조회한 날짜와 함께 받는다)
+  initialData?: { date: string; posts: SupaPost[] };
+};
+
+const PostList = ({ channelId, initialData }: Props) => {
   const date =
     useSearchParams().get('date') ||
     getDateYYYYMMDDWithDash().replaceAll('-', '');
@@ -63,7 +70,12 @@ const PostList = ({ channelId }: { channelId: string }) => {
     isLoadingMore,
     newPostsCount,
     handleRefresh,
-  } = usePosts(channelId, date);
+  } = usePosts(
+    channelId,
+    date,
+    // 다른 날짜로 이동한 직후 이전 날짜의 데이터가 보이지 않도록 날짜가 같을 때만 쓴다
+    initialData?.date === date ? initialData.posts : undefined,
+  );
 
   console.log('[PostList] usePosts 결과:', {
     postsCount: posts?.length,
@@ -87,7 +99,8 @@ const PostList = ({ channelId }: { channelId: string }) => {
         initial="hidden"
         animate="show"
       >
-        {isLoading ? (
+        {/* 초기 데이터가 있으면 SWR이 isLoading을 true로 주더라도 게시글을 바로 보여준다 */}
+        {isLoading && !posts.length ? (
           <div className="w-full flex flex-col items-center mt-4">
             {/* Show 3 skeletons */}
             {Array.from({ length: 3 }).map((_, i) => (

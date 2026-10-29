@@ -33,12 +33,13 @@ const page = async ({ params, searchParams }: Props) => {
     return redirect(`?date=${today}`);
   }
 
-  /**
-   * TODO
-   * 오늘 날짜에 해당하는 게시글 SSR 처리
-   */
-
-  return <Home channelId={channelId} />;
+  return (
+    <Home
+      channelId={channelId}
+      date={dateParam}
+      userId={user.id}
+    />
+  );
 };
 
 export default page;

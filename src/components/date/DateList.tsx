@@ -39,6 +39,9 @@ export default function DateList() {
 
   return (
     <ScrollableBar
+      // 캐러셀은 하이드레이션 전까지 날짜를 그리지 않으므로 높이를 미리 잡아 아래 피드가 밀리지 않게 한다
+      // 70px = 날짜 칸 높이(p-5 40px + text-lg 줄 높이 28px + 테두리 2px)
+      containerClass="w-full flex gap-2 min-h-[70px]"
       sliderClass="w-full flex items-center"
       infinite={false}
     >

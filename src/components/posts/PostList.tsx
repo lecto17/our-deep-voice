@@ -6,7 +6,7 @@ import GridSpinner from '@/components/spinner/GridSpinner';
 import usePosts from '@/hooks/usePosts';
 import { useSearchParams } from 'next/navigation';
 import { getDateYYYYMMDDWithDash } from '@/utils/utils';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import useInfiniteScroll from '@/hooks/useInfiniteScroll';
 import NewPostsBanner from '@/components/posts/NewPostsBanner';
 import { motion } from 'framer-motion';
@@ -61,6 +61,15 @@ const PostList = ({ channelId, initialData }: Props) => {
 
   console.log('[PostList] 렌더링됨:', { channelId, date });
 
+  // 첫 진입 때 서버에서 그린 게시글은 등장 애니메이션 없이 바로 보여준다
+  // (투명도 0으로 시작하면 하이드레이션 전까지 보이지 않는다). 마운트 시점에 한 번만 정한다
+  const [ssrPostIds] = useState(
+    () =>
+      new Set(
+        initialData?.date === date ? initialData.posts.map((p) => p.id) : [],
+      ),
+  );
+
   const {
     posts,
     isLoading,
@@ -96,7 +105,7 @@ const PostList = ({ channelId, initialData }: Props) => {
       <motion.ul
         className="flex flex-col items-center h-full min-h-full overflow-y-auto p-5 space-y-6 pb-32 bg-surface-page bg-opacity-50"
         variants={container}
-        initial="hidden"
+        initial={ssrPostIds.size ? false : 'hidden'}
         animate="show"
       >
         {/* 초기 데이터가 있으면 SWR이 isLoading을 true로 주더라도 게시글을 바로 보여준다 */}
@@ -113,6 +122,8 @@ const PostList = ({ channelId, initialData }: Props) => {
               <motion.li
                 key={post.id}
                 variants={item}
+                // 나중에 추가되는 게시글(날짜 이동, 무한 스크롤)은 부모의 initial={false}를 물려받지 않도록 명시한다
+                initial={ssrPostIds.has(post.id) ? false : 'hidden'}
                 className="w-full flex justify-center"
               >
                 <PostCard

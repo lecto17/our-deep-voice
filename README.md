@@ -23,3 +23,8 @@
 - 익명 로그인 기능(or 이메일 인증 기능)
 - 채널 별 데이터 저장
 - 간단한 대화창
+
+## AI 협업
+
+AI 코딩 도구를 쓸 때의 규칙과 절차는 [docs/ai-workflow.md](docs/ai-workflow.md)를 따릅니다.
+AI 도구 공통 규칙의 원본은 [AGENTS.md](AGENTS.md)입니다.

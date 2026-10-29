@@ -1,0 +1,45 @@
+Route (app)                                       Size  First Load JS
+┌ ƒ /                                            199 B         102 kB
+├ ○ /_not-found                                  999 B         103 kB
+├ ƒ /api/channels                                199 B         102 kB
+├ ƒ /api/channels/[channelId]/check-password     199 B         102 kB
+├ ƒ /api/channels/[channelId]/join               199 B         102 kB
+├ ƒ /api/comments/[id]/reaction                  199 B         102 kB
+├ ƒ /api/comments/[id]/reaction/[emoji]          199 B         102 kB
+├ ƒ /api/likes                                   199 B         102 kB
+├ ƒ /api/me                                      199 B         102 kB
+├ ƒ /api/me/following                            199 B         102 kB
+├ ƒ /api/mood                                    199 B         102 kB
+├ ƒ /api/mood/response                           199 B         102 kB
+├ ƒ /api/post                                    199 B         102 kB
+├ ƒ /api/posts                                   199 B         102 kB
+├ ƒ /api/posts/[id]                              199 B         102 kB
+├ ƒ /api/posts/[id]/reaction                     199 B         102 kB
+├ ƒ /api/posts/[id]/reaction/[emoji]             199 B         102 kB
+├ ƒ /api/recommend/users                         199 B         102 kB
+├ ƒ /api/search/[slug]                           199 B         102 kB
+├ ƒ /api/users/[...username]                     199 B         102 kB
+├ ○ /auth/auth-code-error                      1.78 kB         156 kB
+├ ƒ /auth/callback                               199 B         102 kB
+├ ƒ /auth/login                                1.72 kB         156 kB
+├ ƒ /channels                                  4.96 kB         156 kB
+├ ƒ /channels/[channelId]                      16.6 kB         256 kB
+├ ƒ /channels/[channelId]/mood                 2.72 kB         114 kB
+├ ƒ /channels/[channelId]/mood/response        1.77 kB         104 kB
+├ ƒ /channels/[channelId]/onboarding           4.47 kB         126 kB
+├ ƒ /channels/[channelId]/onboarding/complete  1.29 kB         103 kB
+├ ƒ /channels/[channelId]/post                 4.53 kB         207 kB
+├ ƒ /channels/[channelId]/profile              2.64 kB         125 kB
+├ ƒ /opengraph-image                             199 B         102 kB
+├ ○ /search                                      496 B         103 kB
+├ ○ /users                                       199 B         102 kB
+└ ƒ /users/[username]                            199 B         102 kB
++ First Load JS shared by all                   102 kB
+  ├ chunks/9813-554d059e2555dbe6.js            45.8 kB
+  ├ chunks/cd088030-32994c356958b6f9.js        54.2 kB
+  └ other shared chunks (total)                1.97 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

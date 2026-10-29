@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI tools: personal settings (shared rules live in .claude/settings.json, AGENTS.md, CLAUDE.md)
+.claude/settings.local.json
+CLAUDE.local.md
